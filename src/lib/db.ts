@@ -245,7 +245,19 @@ class SupabaseStore implements Store {
   }
 
   async remove(id: string): Promise<boolean> {
-    const { error } = await getSupabase().from("applications").delete().eq("id", id);
+    const sb = getSupabase();
+    // Best-effort: remove the applicant's photo from storage so it isn't orphaned.
+    const existing = await this.get(id);
+    if (existing?.photoUrl) {
+      const marker = `/object/public/${photoBucket()}/`;
+      const i = existing.photoUrl.indexOf(marker);
+      if (i >= 0) {
+        const path = existing.photoUrl.slice(i + marker.length);
+        const { error: rmErr } = await sb.storage.from(photoBucket()).remove([path]);
+        if (rmErr) console.error("Failed to remove photo from storage:", rmErr.message);
+      }
+    }
+    const { error } = await sb.from("applications").delete().eq("id", id);
     if (error) throw new Error(error.message);
     return true;
   }

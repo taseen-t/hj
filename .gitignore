@@ -7,3 +7,7 @@ next-env.d.ts
 *.tsbuildinfo
 .DS_Store
 .claude/settings.local.json
+
+# Installed agent skills (re-add anytime via `npx skills add ...`)
+.agents/
+.claude/skills/
