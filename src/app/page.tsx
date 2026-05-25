@@ -14,22 +14,17 @@ export default function Home() {
         <p className="mt-2 text-sm text-brand-100">
           Allied Hospital-I / II &amp; FTH, Faisalabad
         </p>
+        <p className="mx-auto mt-4 max-w-lg border-t border-white/15 pt-3 text-xs text-brand-200">
+          Software Developed by Dr. Rabiya Tariq &amp; Mohammad Taseen Tariq
+        </p>
       </header>
 
       <ApplicationForm />
 
-      <footer className="mt-8 space-y-1.5 text-center text-xs text-slate-400">
-        <p>
-          Made by{" "}
-          <span className="font-medium text-slate-500">
-            Dr. Rabiya Tariq &amp; Mohammad Taseen Tariq
-          </span>
-        </p>
-        <p>
-          <Link href="/admin" className="transition hover:text-slate-600">
-            Administrator login
-          </Link>
-        </p>
+      <footer className="mt-8 text-center text-xs text-slate-400">
+        <Link href="/admin" className="transition hover:text-slate-600">
+          Administrator login
+        </Link>
       </footer>
     </main>
   );

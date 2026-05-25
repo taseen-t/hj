@@ -80,6 +80,13 @@ export async function buildWorkbook(apps: Application[]): Promise<Buffer> {
   });
   ws.autoFilter = { from: "A1", to: { row: 1, column: ws.columnCount } };
 
+  // Credit footer, two rows below the data.
+  const creditRowIdx = ws.rowCount + 2;
+  ws.mergeCells(creditRowIdx, 1, creditRowIdx, ws.columnCount);
+  const creditCell = ws.getCell(creditRowIdx, 1);
+  creditCell.value = "Software Developed by Dr. Rabiya Tariq & Mohammad Taseen Tariq";
+  creditCell.font = { italic: true, color: { argb: "FF6B7280" } };
+
   const out = await wb.xlsx.writeBuffer();
   return Buffer.from(out);
 }
