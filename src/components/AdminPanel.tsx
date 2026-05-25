@@ -91,7 +91,7 @@ export default function AdminPanel() {
   /* ----------------------------- Loading ----------------------------- */
   if (authed === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-[78vh] items-center justify-center">
         <Loader2 className="h-6 w-6 animate-spin text-brand-500" />
       </div>
     );
@@ -100,7 +100,7 @@ export default function AdminPanel() {
   /* ----------------------------- Login ------------------------------- */
   if (!authed) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-4">
+      <main className="flex min-h-[78vh] items-center justify-center px-4">
         <form onSubmit={login} className="card w-full max-w-sm p-8">
           <div className="mb-6 text-center">
             <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">

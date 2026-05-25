@@ -14,9 +14,6 @@ export default function Home() {
         <p className="mt-2 text-sm text-brand-100">
           Allied Hospital-I / II &amp; FTH, Faisalabad
         </p>
-        <p className="mx-auto mt-4 max-w-lg border-t border-white/15 pt-3 text-xs text-brand-200">
-          Software Developed by Dr. Rabiya Tariq &amp; Mohammad Taseen Tariq
-        </p>
       </header>
 
       <ApplicationForm />

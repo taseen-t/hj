@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import Navbar from "@/components/Navbar";
 
 const SITE_URL = "https://hj-seven-alpha.vercel.app";
 const TITLE = "House Job Application 2026-27 | Allied Hospital, Faisalabad";
@@ -48,7 +49,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <Navbar />
+        {children}
+      </body>
     </html>
   );
 }
