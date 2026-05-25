@@ -25,6 +25,13 @@
   .field-input.invalid {
     @apply border-rose-400 focus:border-rose-500 focus:ring-rose-500/15;
   }
+  /* Replace the native select arrow with a custom chevron that has breathing room. */
+  select.field-input {
+    @apply appearance-none bg-no-repeat pr-10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='m6 8 4 4 4-4' stroke='%2364748b' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-position: right 0.85rem center;
+    background-size: 1.1rem 1.1rem;
+  }
   .field-error {
     @apply mt-1 text-xs font-medium text-rose-600;
   }

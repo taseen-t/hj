@@ -21,10 +21,18 @@ export default function Home() {
 
       <ApplicationForm />
 
-      <footer className="mt-8 text-center text-xs text-slate-400">
-        <Link href="/admin" className="transition hover:text-slate-600">
-          Administrator login
-        </Link>
+      <footer className="mt-8 space-y-1.5 text-center text-xs text-slate-400">
+        <p>
+          Made by{" "}
+          <span className="font-medium text-slate-500">
+            Dr. Rabiya Tariq &amp; Mohammad Taseen Tariq
+          </span>
+        </p>
+        <p>
+          <Link href="/admin" className="transition hover:text-slate-600">
+            Administrator login
+          </Link>
+        </p>
       </footer>
     </main>
   );
