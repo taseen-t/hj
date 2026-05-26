@@ -82,8 +82,8 @@ export default function AdminPanel() {
     const q = query.trim().toLowerCase();
     if (!q) return apps;
     return apps.filter((a) =>
-      [a.name, a.fatherName, a.cnic, a.districtOfDomicile].some((v) =>
-        v?.toLowerCase().includes(q)
+      [a.name, a.fatherName, a.cnic, a.districtOfDomicile, a.id.slice(0, 8)].some(
+        (v) => v?.toLowerCase().includes(q)
       )
     );
   }, [apps, query]);
@@ -163,7 +163,7 @@ export default function AdminPanel() {
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           className="field-input pl-9"
-          placeholder="Search by name, father, CNIC, district…"
+          placeholder="Search by name, father, CNIC, district, ref ID…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -175,6 +175,7 @@ export default function AdminPanel() {
             <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-4 py-3 font-semibold">Photo</th>
+                <th className="px-4 py-3 font-semibold">Ref ID</th>
                 <th className="px-4 py-3 font-semibold">Name</th>
                 <th className="px-4 py-3 font-semibold">Father</th>
                 <th className="px-4 py-3 font-semibold">CNIC</th>
@@ -201,6 +202,9 @@ export default function AdminPanel() {
                       </span>
                     )}
                   </td>
+                  <td className="px-4 py-2.5 font-mono text-xs font-semibold tracking-wider text-brand-700">
+                    {a.id.slice(0, 8).toUpperCase()}
+                  </td>
                   <td className="px-4 py-2.5 font-medium text-slate-900">{a.name}</td>
                   <td className="px-4 py-2.5 text-slate-600">{a.fatherName}</td>
                   <td className="px-4 py-2.5 text-slate-600">{a.cnic}</td>
@@ -226,7 +230,7 @@ export default function AdminPanel() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={9} className="px-4 py-12 text-center text-slate-400">
                     {loading ? "Loading…" : "No applications found."}
                   </td>
                 </tr>
@@ -335,6 +339,15 @@ function DetailDrawer({
         </div>
 
         <div className="space-y-6 px-6 py-6">
+          <div className="rounded-xl bg-brand-50 px-4 py-3 ring-1 ring-brand-100">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-brand-600">
+              Reference ID
+            </div>
+            <div className="font-mono text-lg font-bold tracking-wider text-brand-700">
+              {app.id.slice(0, 8).toUpperCase()}
+            </div>
+          </div>
+
           {app.photoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img

@@ -1,6 +1,19 @@
 import type { Metadata, Viewport } from "next";
+import { Open_Sans, Manrope } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+
+const openSans = Open_Sans({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-open-sans",
+});
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-manrope",
+});
 
 const SITE_URL = "https://hj-seven-alpha.vercel.app";
 const TITLE = "House Job Application 2026-27 | Allied Hospital, Faisalabad";
@@ -48,7 +61,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${openSans.variable} ${manrope.variable}`}>
       <body>
         <Navbar />
         {children}

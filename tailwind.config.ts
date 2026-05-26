@@ -20,7 +20,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        sans: ["var(--font-open-sans)", "system-ui", "sans-serif"],
+        display: ["var(--font-manrope)", "system-ui", "sans-serif"],
       },
       boxShadow: {
         card: "0 1px 3px rgba(16,24,40,.1), 0 1px 2px rgba(16,24,40,.06)",

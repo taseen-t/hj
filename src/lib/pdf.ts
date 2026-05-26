@@ -3,7 +3,7 @@ import type { ApplicationInput } from "./types";
 // Builds a clean, single-page A4 PDF of the submitted application, entirely in
 // the browser (no applicant data ever leaves the page to a third party).
 export async function downloadApplicationPdf(
-  data: ApplicationInput & { photo?: string }
+  data: ApplicationInput & { photo?: string; referenceId?: string }
 ): Promise<void> {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -35,7 +35,15 @@ export async function downloadApplicationPdf(
     }
   }
 
-  let y = 134;
+  /* ---- Reference ID (top-right, below header band) ---- */
+  if (data.referenceId) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...navy);
+    doc.text(`REFERENCE ID: ${data.referenceId}`, W - M, 122, { align: "right" });
+  }
+
+  let y = 142;
 
   const field = (x: number, label: string, value: string, colWidth: number) => {
     doc.setFont("helvetica", "bold");

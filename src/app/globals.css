@@ -4,7 +4,13 @@
 
 @layer base {
   body {
-    @apply bg-slate-100 text-slate-800 antialiased;
+    @apply bg-slate-100 font-sans text-slate-800 antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-display tracking-tight;
   }
 }
 

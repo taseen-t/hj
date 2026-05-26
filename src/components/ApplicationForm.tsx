@@ -73,7 +73,10 @@ export default function ApplicationForm() {
     if (!submitted) return;
     setDownloading(true);
     try {
-      await downloadApplicationPdf(submitted.values);
+      await downloadApplicationPdf({
+        ...submitted.values,
+        referenceId: submitted.id.slice(0, 8).toUpperCase(),
+      });
     } finally {
       setDownloading(false);
     }
