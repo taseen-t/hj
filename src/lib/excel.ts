@@ -1,92 +1,91 @@
-import ExcelJS from "exceljs";
+import writeXlsxFile from "write-excel-file/node";
+import type { Cell, Columns, SheetData } from "write-excel-file";
 import type { Application } from "./types";
+
+const NAVY = "#05125c";
+const GREY = "#6b7280";
 
 function photoCell(url: string | null): string {
   if (!url) return "";
   return url.startsWith("http") ? url : "(uploaded)";
 }
 
+const COLUMN_DEFS: ReadonlyArray<{
+  header: string;
+  width: number;
+  value: (a: Application) => string;
+}> = [
+  { header: "Submitted", width: 20, value: (a) => new Date(a.createdAt).toLocaleString() },
+  { header: "Name", width: 24, value: (a) => a.name },
+  { header: "Father Name", width: 24, value: (a) => a.fatherName },
+  { header: "Place of Birth", width: 18, value: (a) => a.placeOfBirth },
+  { header: "Date of Birth", width: 14, value: (a) => a.dateOfBirth },
+  { header: "Religion", width: 14, value: (a) => a.religion },
+  { header: "Nationality", width: 14, value: (a) => a.nationality },
+  { header: "Gender", width: 10, value: (a) => a.gender },
+  { header: "CNIC / Passport", width: 20, value: (a) => a.cnic },
+  { header: "Marital Status", width: 14, value: (a) => a.maritalStatus },
+  { header: "District of Domicile", width: 18, value: (a) => a.districtOfDomicile },
+  { header: "WhatsApp", width: 16, value: (a) => a.whatsapp },
+  { header: "Guardian Mobile", width: 16, value: (a) => a.guardianMobile },
+  { header: "Mailing Address", width: 32, value: (a) => a.mailingAddress },
+  { header: "University Status", width: 28, value: (a) => a.universityStatus },
+  { header: "University Name", width: 26, value: (a) => a.universityName },
+  { header: "Obtained Marks", width: 14, value: (a) => a.obtainedMarks?.toString() ?? "" },
+  { header: "Total Marks", width: 12, value: (a) => a.totalMarks?.toString() ?? "" },
+  { header: "Preference 1", width: 20, value: (a) => a.preference1 },
+  { header: "Preference 2", width: 20, value: (a) => a.preference2 },
+  { header: "Preference 3", width: 20, value: (a) => a.preference3 },
+  { header: "Preference 4", width: 20, value: (a) => a.preference4 },
+  { header: "Assigned Rotation", width: 20, value: (a) => a.assignedRotation ?? "" },
+  { header: "Photo", width: 30, value: (a) => photoCell(a.photoUrl) },
+];
+
 export async function buildWorkbook(apps: Application[]): Promise<Buffer> {
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "House Job Application Portal";
-  wb.created = new Date();
+  const numCols = COLUMN_DEFS.length;
 
-  const ws = wb.addWorksheet("Applications", {
-    views: [{ state: "frozen", ySplit: 1 }],
-  });
+  const headerRow: Cell[] = COLUMN_DEFS.map((c) => ({
+    value: c.header,
+    type: String,
+    fontWeight: "bold",
+    color: "#ffffff",
+    backgroundColor: NAVY,
+    height: 22,
+  }));
 
-  ws.columns = [
-    { header: "Submitted", key: "createdAt", width: 20 },
-    { header: "Name", key: "name", width: 24 },
-    { header: "Father Name", key: "fatherName", width: 24 },
-    { header: "Place of Birth", key: "placeOfBirth", width: 18 },
-    { header: "Date of Birth", key: "dateOfBirth", width: 14 },
-    { header: "Religion", key: "religion", width: 14 },
-    { header: "Nationality", key: "nationality", width: 14 },
-    { header: "Gender", key: "gender", width: 10 },
-    { header: "CNIC / Passport", key: "cnic", width: 20 },
-    { header: "Marital Status", key: "maritalStatus", width: 14 },
-    { header: "District of Domicile", key: "districtOfDomicile", width: 18 },
-    { header: "WhatsApp", key: "whatsapp", width: 16 },
-    { header: "Guardian Mobile", key: "guardianMobile", width: 16 },
-    { header: "Mailing Address", key: "mailingAddress", width: 32 },
-    { header: "University Status", key: "universityStatus", width: 28 },
-    { header: "University Name", key: "universityName", width: 26 },
-    { header: "Obtained Marks", key: "obtainedMarks", width: 14 },
-    { header: "Total Marks", key: "totalMarks", width: 12 },
-    { header: "Preference 1", key: "preference1", width: 20 },
-    { header: "Preference 2", key: "preference2", width: 20 },
-    { header: "Preference 3", key: "preference3", width: 20 },
-    { header: "Preference 4", key: "preference4", width: 20 },
-    { header: "Assigned Rotation", key: "assignedRotation", width: 20 },
-    { header: "Photo", key: "photo", width: 30 },
+  const dataRows: Cell[][] = apps.map((a) =>
+    COLUMN_DEFS.map(
+      (c): Cell => ({
+        value: c.value(a),
+        type: String,
+      })
+    )
+  );
+
+  const spacerRow: Cell[] = Array.from({ length: numCols }, () => ({
+    value: "",
+    type: String,
+  }));
+
+  // Credit footer: merged across all columns, italic, grey.
+  const creditRow: Cell[] = [
+    {
+      value: "Software Developed by Dr. Rabiya Tariq & Mohammad Taseen Tariq",
+      type: String,
+      fontStyle: "italic",
+      color: GREY,
+      span: numCols,
+    },
+    ...Array<Cell>(numCols - 1).fill(null),
   ];
 
-  for (const a of apps) {
-    ws.addRow({
-      createdAt: new Date(a.createdAt).toLocaleString(),
-      name: a.name,
-      fatherName: a.fatherName,
-      placeOfBirth: a.placeOfBirth,
-      dateOfBirth: a.dateOfBirth,
-      religion: a.religion,
-      nationality: a.nationality,
-      gender: a.gender,
-      cnic: a.cnic,
-      maritalStatus: a.maritalStatus,
-      districtOfDomicile: a.districtOfDomicile,
-      whatsapp: a.whatsapp,
-      guardianMobile: a.guardianMobile,
-      mailingAddress: a.mailingAddress,
-      universityStatus: a.universityStatus,
-      universityName: a.universityName,
-      obtainedMarks: a.obtainedMarks ?? "",
-      totalMarks: a.totalMarks ?? "",
-      preference1: a.preference1,
-      preference2: a.preference2,
-      preference3: a.preference3,
-      preference4: a.preference4,
-      assignedRotation: a.assignedRotation ?? "",
-      photo: photoCell(a.photoUrl),
-    });
-  }
+  const data: SheetData = [headerRow, ...dataRows, spacerRow, creditRow];
+  const columns: Columns = COLUMN_DEFS.map((c) => ({ width: c.width }));
 
-  const header = ws.getRow(1);
-  header.font = { bold: true, color: { argb: "FFFFFFFF" } };
-  header.alignment = { vertical: "middle" };
-  header.height = 22;
-  header.eachCell((cell) => {
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF05125C" } };
+  return await writeXlsxFile(data, {
+    columns,
+    stickyRowsCount: 1,
+    buffer: true,
+    sheet: "Applications",
   });
-  ws.autoFilter = { from: "A1", to: { row: 1, column: ws.columnCount } };
-
-  // Credit footer, two rows below the data.
-  const creditRowIdx = ws.rowCount + 2;
-  ws.mergeCells(creditRowIdx, 1, creditRowIdx, ws.columnCount);
-  const creditCell = ws.getCell(creditRowIdx, 1);
-  creditCell.value = "Software Developed by Dr. Rabiya Tariq & Mohammad Taseen Tariq";
-  creditCell.font = { italic: true, color: { argb: "FF6B7280" } };
-
-  const out = await wb.xlsx.writeBuffer();
-  return Buffer.from(out);
 }
