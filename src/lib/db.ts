@@ -1,15 +1,17 @@
 import crypto from "crypto";
 import { promises as fs } from "fs";
 import path from "path";
-import type { Application, ApplicationInput } from "./types";
+import type { Application, ApplicationInput, ApplicationPatch } from "./types";
+import { cnicNormalize } from "./types";
 import { getSupabase, hasSupabase, photoBucket } from "./supabase";
 
 export interface Store {
   create(input: ApplicationInput): Promise<Application>;
   list(): Promise<Application[]>;
   get(id: string): Promise<Application | null>;
-  update(id: string, patch: { assignedRotation: string | null }): Promise<Application | null>;
+  update(id: string, patch: ApplicationPatch): Promise<Application | null>;
   remove(id: string): Promise<boolean>;
+  findByCnic(cnic: string): Promise<Application | null>;
 }
 
 const newId = () => crypto.randomUUID();
@@ -99,12 +101,12 @@ class LocalStore implements Store {
     return (await readAll()).find((r) => r.id === id) ?? null;
   }
 
-  update(id: string, patch: { assignedRotation: string | null }): Promise<Application | null> {
+  update(id: string, patch: ApplicationPatch): Promise<Application | null> {
     return withLock(async () => {
       const rows = await readAll();
       const idx = rows.findIndex((r) => r.id === id);
       if (idx === -1) return null;
-      rows[idx] = { ...rows[idx], assignedRotation: patch.assignedRotation };
+      rows[idx] = { ...rows[idx], ...patch };
       await writeAll(rows);
       return rows[idx];
     });
@@ -118,6 +120,12 @@ class LocalStore implements Store {
       await writeAll(next);
       return true;
     });
+  }
+
+  async findByCnic(cnic: string): Promise<Application | null> {
+    const target = cnicNormalize(cnic);
+    const rows = await readAll();
+    return rows.find((r) => cnicNormalize(r.cnic) === target) ?? null;
   }
 }
 
@@ -232,16 +240,55 @@ class SupabaseStore implements Store {
 
   async update(
     id: string,
-    patch: { assignedRotation: string | null }
+    patch: ApplicationPatch
   ): Promise<Application | null> {
+    const colMap: Record<keyof ApplicationPatch, string> = {
+      name: "name",
+      fatherName: "father_name",
+      placeOfBirth: "place_of_birth",
+      dateOfBirth: "date_of_birth",
+      religion: "religion",
+      nationality: "nationality",
+      gender: "gender",
+      cnic: "cnic",
+      maritalStatus: "marital_status",
+      districtOfDomicile: "district_of_domicile",
+      whatsapp: "whatsapp",
+      guardianMobile: "guardian_mobile",
+      mailingAddress: "mailing_address",
+      universityStatus: "university_status",
+      universityName: "university_name",
+      obtainedMarks: "obtained_marks",
+      totalMarks: "total_marks",
+      preference1: "preference_1",
+      preference2: "preference_2",
+      preference3: "preference_3",
+      preference4: "preference_4",
+      assignedRotation: "assigned_rotation",
+      photoUrl: "photo_url",
+    };
+    const row: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(patch)) {
+      const col = colMap[k as keyof ApplicationPatch];
+      if (col) row[col] = v;
+    }
+    if (Object.keys(row).length === 0) {
+      return this.get(id);
+    }
     const { data, error } = await getSupabase()
       .from("applications")
-      .update({ assigned_rotation: patch.assignedRotation })
+      .update(row)
       .eq("id", id)
       .select()
       .maybeSingle();
     if (error) throw new Error(error.message);
     return data ? fromRow(data) : null;
+  }
+
+  async findByCnic(cnic: string): Promise<Application | null> {
+    const target = cnicNormalize(cnic);
+    const list = await this.list();
+    return list.find((r) => cnicNormalize(r.cnic) === target) ?? null;
   }
 
   async remove(id: string): Promise<boolean> {

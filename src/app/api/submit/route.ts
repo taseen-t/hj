@@ -21,7 +21,22 @@ export async function POST(req: Request) {
   }
 
   try {
-    const app = await getStore().create(parsed.data);
+    const store = getStore();
+    // Reject duplicate CNIC submissions (normalize for comparison).
+    const existing = await store.findByCnic(parsed.data.cnic);
+    if (existing) {
+      return NextResponse.json(
+        {
+          error:
+            "An application with this CNIC has already been submitted. " +
+            `Existing Reference ID: ${existing.id.slice(0, 8).toUpperCase()}.`,
+          duplicate: true,
+          referenceId: existing.id.slice(0, 8).toUpperCase(),
+        },
+        { status: 409 }
+      );
+    }
+    const app = await store.create(parsed.data);
     return NextResponse.json({ id: app.id, createdAt: app.createdAt });
   } catch (e) {
     console.error("Failed to save application:", e);

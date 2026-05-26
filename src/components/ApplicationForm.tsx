@@ -173,7 +173,13 @@ export default function ApplicationForm() {
           </select>
         </Field>
         <Field label="CNIC / Passport" required error={errors.cnic} htmlFor="cnic">
-          <input id="cnic" className={ic(errors.cnic)} placeholder="35202-1234567-1" {...register("cnic")} />
+          <input
+            id="cnic"
+            maxLength={18}
+            className={ic(errors.cnic)}
+            placeholder="35202-1234567-1"
+            {...register("cnic")}
+          />
         </Field>
         <Field label="Marital Status" required error={errors.maritalStatus} htmlFor="maritalStatus">
           <select id="maritalStatus" className={ic(errors.maritalStatus)} defaultValue="" {...register("maritalStatus")}>
@@ -193,10 +199,24 @@ export default function ApplicationForm() {
 
         <SectionTitle>Contact</SectionTitle>
         <Field label="Personal WhatsApp Number" required error={errors.whatsapp} htmlFor="whatsapp">
-          <input id="whatsapp" inputMode="tel" className={ic(errors.whatsapp)} placeholder="03001234567" {...register("whatsapp")} />
+          <input
+            id="whatsapp"
+            inputMode="tel"
+            maxLength={15}
+            className={ic(errors.whatsapp)}
+            placeholder="03001234567"
+            {...register("whatsapp")}
+          />
         </Field>
         <Field label="Guardian Mobile Number" required error={errors.guardianMobile} htmlFor="guardian">
-          <input id="guardian" inputMode="tel" className={ic(errors.guardianMobile)} placeholder="03001234567" {...register("guardianMobile")} />
+          <input
+            id="guardian"
+            inputMode="tel"
+            maxLength={15}
+            className={ic(errors.guardianMobile)}
+            placeholder="03001234567"
+            {...register("guardianMobile")}
+          />
         </Field>
         <Field label="Mailing Address" required error={errors.mailingAddress} htmlFor="address" full>
           <textarea id="address" rows={2} className={ic(errors.mailingAddress)} {...register("mailingAddress")} />

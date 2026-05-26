@@ -130,14 +130,10 @@ export async function downloadApplicationPdf(
     M,
     811
   );
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(...navy);
   doc.text(
-    "Software Developed by Dr. Rabiya Tariq & Mohammad Taseen Tariq",
-    W / 2,
-    825,
-    { align: "center" }
+    "Software developed by Dr. Rabiya Tariq & Mohammad Taseen Tariq.",
+    M,
+    822
   );
 
   const safe = data.name.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "applicant";
