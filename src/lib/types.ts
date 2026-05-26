@@ -15,6 +15,19 @@ export const UNIVERSITY_STATUSES = [
   "Foreign Medical Colleges / University",
 ] as const;
 
+// Annual session year used in the formatted reference ID (HJ-YYYY-NNNN).
+// Change this for the next session.
+export const SESSION_YEAR = 2026;
+
+// Build a human-friendly reference ID. Falls back to the UUID slice when
+// the sequence number isn't available yet (e.g. before the DB migration runs).
+export function referenceIdFor(app: { seq?: number; id: string }): string {
+  if (app.seq && app.seq > 0) {
+    return `HJ-${SESSION_YEAR}-${String(app.seq).padStart(4, "0")}`;
+  }
+  return app.id.slice(0, 8).toUpperCase();
+}
+
 // House-job rotations. Adjust this list to match your institution's offering.
 export const ROTATIONS = [
   "Medicine",
@@ -160,6 +173,7 @@ export interface Application
   obtainedMarks?: number;
   totalMarks?: number;
   id: string;
+  seq: number;
   createdAt: string;
   photoUrl: string | null;
   assignedRotation: string | null;

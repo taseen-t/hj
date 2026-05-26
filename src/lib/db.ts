@@ -33,6 +33,7 @@ function buildRecord(
     obtainedMarks: rest.obtainedMarks ? Number(rest.obtainedMarks) : undefined,
     totalMarks: rest.totalMarks ? Number(rest.totalMarks) : undefined,
     id,
+    seq: 0, // assigned by the store (auto-increment in Supabase, max+1 in local).
     createdAt: new Date().toISOString(),
     photoUrl,
     assignedRotation: null,
@@ -85,7 +86,10 @@ class LocalStore implements Store {
   create(input: ApplicationInput): Promise<Application> {
     return withLock(async () => {
       const rows = await readAll();
+      const nextSeq =
+        rows.reduce((m, r) => Math.max(m, r.seq || 0), 0) + 1;
       const rec = buildRecord(input, input.photo || null);
+      rec.seq = nextSeq;
       rows.push(rec);
       await writeAll(rows);
       return rec;
@@ -167,6 +171,7 @@ function fromRow(r: Record<string, unknown>): Application {
   const n = (v: unknown) => (v == null ? undefined : Number(v));
   return {
     id: s(r.id),
+    seq: r.seq != null ? Number(r.seq) : 0,
     createdAt: s(r.created_at),
     name: s(r.name),
     fatherName: s(r.father_name),
@@ -214,9 +219,14 @@ class SupabaseStore implements Store {
     }
 
     const rec = buildRecord(input, photoUrl, id);
-    const { error } = await getSupabase().from("applications").insert(toRow(rec));
+    const { data, error } = await getSupabase()
+      .from("applications")
+      .insert(toRow(rec))
+      .select()
+      .single();
     if (error) throw new Error(error.message);
-    return rec;
+    // Use the row returned from the DB so we get the auto-assigned `seq`.
+    return data ? fromRow(data) : rec;
   }
 
   async list(): Promise<Application[]> {
@@ -242,7 +252,7 @@ class SupabaseStore implements Store {
     id: string,
     patch: ApplicationPatch
   ): Promise<Application | null> {
-    const colMap: Record<keyof ApplicationPatch, string> = {
+    const colMap: Partial<Record<keyof ApplicationPatch, string>> = {
       name: "name",
       fatherName: "father_name",
       placeOfBirth: "place_of_birth",

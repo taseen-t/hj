@@ -128,12 +128,13 @@ export async function downloadApplicationPdf(
   doc.text(
     `Generated on ${new Date().toLocaleString()} - This is the applicant's copy.`,
     M,
-    811
+    815
   );
   doc.text(
     "Software developed by Dr. Rabiya Tariq & Mohammad Taseen Tariq.",
-    M,
-    822
+    W - M,
+    815,
+    { align: "right" }
   );
 
   const safe = data.name.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "applicant";

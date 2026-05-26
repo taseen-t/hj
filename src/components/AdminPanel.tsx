@@ -18,6 +18,7 @@ import {
   GENDERS,
   LABELS,
   MARITAL_STATUSES,
+  referenceIdFor,
   ROTATIONS,
   UNIVERSITY_STATUSES,
   type Application,
@@ -92,9 +93,13 @@ export default function AdminPanel() {
     const q = query.trim().toLowerCase();
     if (!q) return apps;
     return apps.filter((a) =>
-      [a.name, a.fatherName, a.cnic, a.districtOfDomicile, a.id.slice(0, 8)].some(
-        (v) => v?.toLowerCase().includes(q)
-      )
+      [
+        a.name,
+        a.fatherName,
+        a.cnic,
+        a.districtOfDomicile,
+        referenceIdFor(a),
+      ].some((v) => v?.toLowerCase().includes(q))
     );
   }, [apps, query]);
 
@@ -213,7 +218,7 @@ export default function AdminPanel() {
                     )}
                   </td>
                   <td className="px-4 py-2.5 font-mono text-xs font-semibold tracking-wider text-brand-700">
-                    {a.id.slice(0, 8).toUpperCase()}
+                    {referenceIdFor(a)}
                   </td>
                   <td className="px-4 py-2.5 font-medium text-slate-900">{a.name}</td>
                   <td className="px-4 py-2.5 text-slate-600">{a.fatherName}</td>
@@ -518,7 +523,7 @@ function DetailDrawer({
               Reference ID
             </div>
             <div className="font-mono text-lg font-bold tracking-wider text-brand-700">
-              {app.id.slice(0, 8).toUpperCase()}
+              {referenceIdFor(app)}
             </div>
           </div>
 

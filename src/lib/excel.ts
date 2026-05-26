@@ -1,6 +1,6 @@
 import writeXlsxFile from "write-excel-file/node";
 import type { Cell, Columns, SheetData } from "write-excel-file";
-import type { Application } from "./types";
+import { referenceIdFor, type Application } from "./types";
 
 const NAVY = "#05125c";
 const GREY = "#6b7280";
@@ -15,6 +15,7 @@ const COLUMN_DEFS: ReadonlyArray<{
   width: number;
   value: (a: Application) => string;
 }> = [
+  { header: "Ref ID", width: 16, value: (a) => referenceIdFor(a) },
   { header: "Submitted", width: 20, value: (a) => new Date(a.createdAt).toLocaleString() },
   { header: "Name", width: 24, value: (a) => a.name },
   { header: "Father Name", width: 24, value: (a) => a.fatherName },

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { applicationInputSchema } from "@/lib/types";
+import { applicationInputSchema, referenceIdFor } from "@/lib/types";
 import { getStore } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -25,19 +25,24 @@ export async function POST(req: Request) {
     // Reject duplicate CNIC submissions (normalize for comparison).
     const existing = await store.findByCnic(parsed.data.cnic);
     if (existing) {
+      const existingRef = referenceIdFor(existing);
       return NextResponse.json(
         {
           error:
             "An application with this CNIC has already been submitted. " +
-            `Existing Reference ID: ${existing.id.slice(0, 8).toUpperCase()}.`,
+            `Existing Reference ID: ${existingRef}.`,
           duplicate: true,
-          referenceId: existing.id.slice(0, 8).toUpperCase(),
+          referenceId: existingRef,
         },
         { status: 409 }
       );
     }
     const app = await store.create(parsed.data);
-    return NextResponse.json({ id: app.id, createdAt: app.createdAt });
+    return NextResponse.json({
+      id: app.id,
+      createdAt: app.createdAt,
+      referenceId: referenceIdFor(app),
+    });
   } catch (e) {
     console.error("Failed to save application:", e);
     return NextResponse.json({ error: "Could not save application" }, { status: 500 });

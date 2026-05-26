@@ -18,7 +18,11 @@ import { Field, SectionTitle } from "./fields";
 
 const MAX_PHOTO = 2 * 1024 * 1024;
 
-type Submitted = { values: ApplicationInput & { photo?: string }; id: string };
+type Submitted = {
+  values: ApplicationInput & { photo?: string };
+  id: string;
+  referenceId: string;
+};
 
 export default function ApplicationForm() {
   const {
@@ -62,7 +66,11 @@ export default function ApplicationForm() {
         return;
       }
       const j = await res.json();
-      setSubmitted({ values: payload, id: j.id });
+      setSubmitted({
+        values: payload,
+        id: j.id,
+        referenceId: j.referenceId || j.id.slice(0, 8).toUpperCase(),
+      });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       setServerError("Network error. Please check your connection and try again.");
@@ -75,7 +83,7 @@ export default function ApplicationForm() {
     try {
       await downloadApplicationPdf({
         ...submitted.values,
-        referenceId: submitted.id.slice(0, 8).toUpperCase(),
+        referenceId: submitted.referenceId,
       });
     } finally {
       setDownloading(false);
@@ -109,10 +117,10 @@ export default function ApplicationForm() {
                   Your Reference ID
                 </div>
                 <div className="mt-1 font-mono text-2xl font-bold tracking-[0.18em] text-brand-700">
-                  {submitted.id.slice(0, 8).toUpperCase()}
+                  {submitted.referenceId}
                 </div>
               </div>
-              <CopyButton value={submitted.id.slice(0, 8).toUpperCase()} />
+              <CopyButton value={submitted.referenceId} />
             </div>
             <p className="mt-2 text-xs text-slate-500">
               Save this — you&apos;ll need it for any follow-up. It&apos;s also printed on the PDF.
