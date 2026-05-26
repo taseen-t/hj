@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { clsx } from "clsx";
-import { CheckCircle2, Download, Loader2, Upload, AlertCircle } from "lucide-react";
+import { CheckCircle2, Check, Copy, Download, Loader2, Upload, AlertCircle } from "lucide-react";
 import {
   applicationInputSchema,
   GENDERS,
@@ -100,7 +100,25 @@ export default function ApplicationForm() {
             application has been recorded.
           </p>
         </div>
-        <div className="space-y-4 px-6 py-6 sm:px-10">
+        <div className="space-y-5 px-6 py-6 sm:px-10">
+          {/* Prominent Reference ID badge */}
+          <div className="rounded-xl bg-brand-50 px-5 py-4 ring-1 ring-brand-100">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-brand-600">
+                  Your Reference ID
+                </div>
+                <div className="mt-1 font-mono text-2xl font-bold tracking-[0.18em] text-brand-700">
+                  {submitted.id.slice(0, 8).toUpperCase()}
+                </div>
+              </div>
+              <CopyButton value={submitted.id.slice(0, 8).toUpperCase()} />
+            </div>
+            <p className="mt-2 text-xs text-slate-500">
+              Save this — you&apos;ll need it for any follow-up. It&apos;s also printed on the PDF.
+            </p>
+          </div>
+
           {photo && (
             <img
               src={photo}
@@ -114,7 +132,6 @@ export default function ApplicationForm() {
             <Row k="CNIC / Passport" v={submitted.values.cnic} />
             <Row k="Date of Birth" v={submitted.values.dateOfBirth} />
             <Row k="WhatsApp" v={submitted.values.whatsapp} />
-            <Row k="Reference ID" v={submitted.id.slice(0, 8).toUpperCase()} />
           </dl>
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
             <button className="btn btn-primary flex-1" onClick={handleDownload} disabled={downloading}>
@@ -132,13 +149,6 @@ export default function ApplicationForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="card p-6 sm:p-8">
-      {serverError && (
-        <div className="mb-6 flex items-start gap-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-700 ring-1 ring-rose-200">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{serverError}</span>
-        </div>
-      )}
-
       <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
         <SectionTitle>Personal Information</SectionTitle>
 
@@ -310,12 +320,20 @@ export default function ApplicationForm() {
         </div>
       </div>
 
-      <div className="mt-8 flex items-center justify-between gap-4">
-        <p className="text-xs text-slate-400">Fields marked * are required.</p>
-        <button type="submit" className="btn btn-primary px-8" disabled={isSubmitting}>
-          {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          {isSubmitting ? "Submitting..." : "Submit Application"}
-        </button>
+      <div className="mt-8 space-y-4">
+        {serverError && (
+          <div className="flex items-start gap-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-700 ring-1 ring-rose-200">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{serverError}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-xs text-slate-400">Fields marked * are required.</p>
+          <button type="submit" className="btn btn-primary px-8" disabled={isSubmitting}>
+            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {isSubmitting ? "Submitting..." : "Submit Application"}
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -327,5 +345,27 @@ function Row({ k, v }: { k: string; v: string }) {
       <dt className="text-slate-500">{k}</dt>
       <dd className="font-medium text-slate-900">{v}</dd>
     </div>
+  );
+}
+
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(value);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        } catch {
+          /* clipboard not available — ignore */
+        }
+      }}
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-brand-700 ring-1 ring-brand-200 transition hover:bg-brand-50"
+    >
+      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? "Copied" : "Copy"}
+    </button>
   );
 }
