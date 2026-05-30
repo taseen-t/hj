@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  Download,
   FileSpreadsheet,
   Loader2,
   LogOut,
@@ -23,7 +24,9 @@ import {
   ROTATIONS,
   UNIVERSITY_STATUSES,
   type Application,
+  type ApplicationInput,
 } from "@/lib/types";
+import { downloadApplicationPdf } from "@/lib/pdf";
 
 export default function AdminPanel() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -342,6 +345,7 @@ function DetailDrawer({
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<EditForm>(() => toForm(app));
   const [quickAssign, setQuickAssign] = useState(app.assignedRotation ?? "");
@@ -408,6 +412,38 @@ function DetailDrawer({
       if (res.ok) onDeleted(app.id);
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function downloadPdf() {
+    setDownloadingPdf(true);
+    try {
+      // jsPDF needs the photo as a data URL — fetch & convert the stored URL.
+      let photoDataUrl: string | undefined;
+      if (app.photoUrl) {
+        try {
+          const res = await fetch(app.photoUrl);
+          const blob = await res.blob();
+          photoDataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch {
+          // ignore — fall back to a photo-less PDF
+        }
+      }
+      await downloadApplicationPdf({
+        ...app,
+        universityStatus: app.universityStatus as ApplicationInput["universityStatus"],
+        obtainedMarks: app.obtainedMarks?.toString() ?? "",
+        totalMarks: app.totalMarks?.toString() ?? "",
+        photo: photoDataUrl,
+        referenceId: referenceIdFor(app),
+      });
+    } finally {
+      setDownloadingPdf(false);
     }
   }
 
@@ -624,6 +660,18 @@ function DetailDrawer({
                   </button>
                 </div>
               </div>
+              <button
+                onClick={downloadPdf}
+                className="btn btn-ghost w-full"
+                disabled={downloadingPdf}
+              >
+                {downloadingPdf ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                Download applicant&apos;s PDF
+              </button>
               <button onClick={remove} className="btn btn-danger w-full" disabled={deleting}>
                 {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
                 Delete application
