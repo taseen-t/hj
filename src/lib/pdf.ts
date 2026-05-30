@@ -132,7 +132,7 @@ export async function downloadApplicationPdf(
     815
   );
   doc.text(
-    "Software developed by Dr. Rabiya Tariq & Mohammad Taseen Tariq.",
+    "Software developed by Dr. Rabiya Tariq, Mohammad Taseen Tariq & Zafar Manzoor.",
     W - M,
     815,
     { align: "right" }

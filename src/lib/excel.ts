@@ -72,7 +72,7 @@ export async function buildWorkbook(apps: Application[]): Promise<Buffer> {
   // Credit footer: merged across all columns, italic, grey.
   const creditRow: Cell[] = [
     {
-      value: "Software Developed by Dr. Rabiya Tariq & Mohammad Taseen Tariq",
+      value: "Software Developed by Dr. Rabiya Tariq, Mohammad Taseen Tariq & Zafar Manzoor",
       type: String,
       fontStyle: "italic",
       color: GREY,

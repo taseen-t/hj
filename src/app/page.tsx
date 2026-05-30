@@ -22,7 +22,7 @@ export default function Home() {
         <p>
           Made by{" "}
           <span className="font-medium text-slate-500">
-            Dr. Rabiya Tariq &amp; Mohammad Taseen Tariq
+            Dr. Rabiya Tariq, Mohammad Taseen Tariq &amp; Zafar Manzoor
           </span>
         </p>
         <p>

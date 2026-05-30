@@ -36,7 +36,11 @@ export const metadata: Metadata = {
     "Faisalabad Medical University",
     "FMU",
   ],
-  authors: [{ name: "Dr. Rabiya Tariq" }, { name: "Mohammad Taseen Tariq" }],
+  authors: [
+    { name: "Dr. Rabiya Tariq" },
+    { name: "Mohammad Taseen Tariq" },
+    { name: "Zafar Manzoor" },
+  ],
   openGraph: {
     type: "website",
     url: SITE_URL,
