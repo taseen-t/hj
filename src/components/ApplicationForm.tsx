@@ -170,7 +170,17 @@ export default function ApplicationForm() {
       <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
         <SectionTitle>Personal Information</SectionTitle>
 
-        <Field label="Name" required error={errors.name} htmlFor="name">
+        <Field
+          label={
+            <>
+              Name{" "}
+              <span className="font-normal text-slate-400">(as written on CNIC)</span>
+            </>
+          }
+          required
+          error={errors.name}
+          htmlFor="name"
+        >
           <input id="name" className={ic(errors.name)} placeholder="Full name" {...register("name")} />
         </Field>
         <Field label="Father Name" required error={errors.fatherName} htmlFor="fatherName">
@@ -302,9 +312,11 @@ export default function ApplicationForm() {
             ))}
           </select>
         </Field>
-        <Field label="2nd Preference" error={errors.preference2} htmlFor="pref2">
+        <Field label="2nd Preference" required error={errors.preference2} htmlFor="pref2">
           <select id="pref2" className={ic(errors.preference2)} defaultValue="" {...register("preference2")}>
-            <option value="">Select rotation</option>
+            <option value="" disabled>
+              Select rotation
+            </option>
             {ROTATIONS.map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -312,9 +324,11 @@ export default function ApplicationForm() {
             ))}
           </select>
         </Field>
-        <Field label="3rd Preference" error={errors.preference3} htmlFor="pref3">
+        <Field label="3rd Preference" required error={errors.preference3} htmlFor="pref3">
           <select id="pref3" className={ic(errors.preference3)} defaultValue="" {...register("preference3")}>
-            <option value="">Select rotation</option>
+            <option value="" disabled>
+              Select rotation
+            </option>
             {ROTATIONS.map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -322,9 +336,11 @@ export default function ApplicationForm() {
             ))}
           </select>
         </Field>
-        <Field label="4th Preference" error={errors.preference4} htmlFor="pref4">
+        <Field label="4th Preference" required error={errors.preference4} htmlFor="pref4">
           <select id="pref4" className={ic(errors.preference4)} defaultValue="" {...register("preference4")}>
-            <option value="">Select rotation</option>
+            <option value="" disabled>
+              Select rotation
+            </option>
             {ROTATIONS.map((r) => (
               <option key={r} value={r}>
                 {r}

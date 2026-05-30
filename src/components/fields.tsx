@@ -9,7 +9,7 @@ export function Field({
   full,
   children,
 }: {
-  label: string;
+  label: ReactNode;
   required?: boolean;
   error?: FieldError;
   htmlFor?: string;

@@ -142,9 +142,9 @@ const applicationFields = z.object({
   obtainedMarks: requiredMarks,
   totalMarks: requiredMarks,
   preference1: requiredText("First preferred rotation"),
-  preference2: z.string().trim().optional().or(z.literal("")),
-  preference3: z.string().trim().optional().or(z.literal("")),
-  preference4: z.string().trim().optional().or(z.literal("")),
+  preference2: requiredText("Second preferred rotation"),
+  preference3: requiredText("Third preferred rotation"),
+  preference4: requiredText("Fourth preferred rotation"),
   // Photo arrives as a data URL string (data:image/...;base64,....).
   photo: z
     .string()
