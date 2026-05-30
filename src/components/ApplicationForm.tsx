@@ -247,13 +247,21 @@ export default function ApplicationForm() {
           />
         </Field>
         <Field label="Mailing Address" required error={errors.mailingAddress} htmlFor="address" full>
-          <textarea id="address" rows={2} className={ic(errors.mailingAddress)} {...register("mailingAddress")} />
+          <textarea
+            id="address"
+            rows={2}
+            className={ic(errors.mailingAddress)}
+            placeholder="e.g. House 12, Street 5, Block A, Faisalabad"
+            {...register("mailingAddress")}
+          />
         </Field>
 
         <SectionTitle>Academic Information</SectionTitle>
-        <Field label="University / College Status" error={errors.universityStatus} htmlFor="uniStatus">
+        <Field label="University / College Status" required error={errors.universityStatus} htmlFor="uniStatus">
           <select id="uniStatus" className={ic(errors.universityStatus)} defaultValue="" {...register("universityStatus")}>
-            <option value="">Select status</option>
+            <option value="" disabled>
+              Select status
+            </option>
             {UNIVERSITY_STATUSES.map((u) => (
               <option key={u} value={u}>
                 {u}
@@ -261,13 +269,13 @@ export default function ApplicationForm() {
             ))}
           </select>
         </Field>
-        <Field label="Name of University / College" error={errors.universityName} htmlFor="uniName">
+        <Field label="Name of University / College" required error={errors.universityName} htmlFor="uniName">
           <input id="uniName" className={ic(errors.universityName)} {...register("universityName")} />
         </Field>
-        <Field label="Obtained Marks" error={errors.obtainedMarks} htmlFor="obtained">
+        <Field label="Obtained Marks" required error={errors.obtainedMarks} htmlFor="obtained">
           <input id="obtained" inputMode="numeric" className={ic(errors.obtainedMarks)} {...register("obtainedMarks")} />
         </Field>
-        <Field label="Total Marks" error={errors.totalMarks} htmlFor="total">
+        <Field label="Total Marks" required error={errors.totalMarks} htmlFor="total">
           <input id="total" inputMode="numeric" className={ic(errors.totalMarks)} {...register("totalMarks")} />
         </Field>
         <Field label="Percentage (auto)" htmlFor="percentage" full>

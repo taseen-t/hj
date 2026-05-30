@@ -99,6 +99,12 @@ const optionalMarks = z
   .optional()
   .or(z.literal(""));
 
+const requiredMarks = z
+  .string({ required_error: "Marks are required" })
+  .trim()
+  .min(1, "Marks are required")
+  .regex(/^\d+(\.\d+)?$/, "Enter a valid number");
+
 const marksRefine = (d: { obtainedMarks?: string; totalMarks?: string }) => {
   if (!d.obtainedMarks || !d.totalMarks) return true;
   return Number(d.obtainedMarks) <= Number(d.totalMarks);
@@ -129,10 +135,12 @@ const applicationFields = z.object({
   whatsapp: phone("WhatsApp number"),
   guardianMobile: phone("Guardian mobile number"),
   mailingAddress: requiredText("Mailing address", 5),
-  universityStatus: z.string().trim().optional().or(z.literal("")),
-  universityName: z.string().trim().optional().or(z.literal("")),
-  obtainedMarks: optionalMarks,
-  totalMarks: optionalMarks,
+  universityStatus: z.enum(UNIVERSITY_STATUSES, {
+    errorMap: () => ({ message: "Select a university / college status" }),
+  }),
+  universityName: requiredText("University / College name"),
+  obtainedMarks: requiredMarks,
+  totalMarks: requiredMarks,
   preference1: requiredText("First preferred rotation"),
   preference2: z.string().trim().optional().or(z.literal("")),
   preference3: z.string().trim().optional().or(z.literal("")),
