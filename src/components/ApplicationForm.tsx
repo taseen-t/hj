@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { clsx } from "clsx";
 import { CheckCircle2, Check, Copy, Download, Loader2, Upload, AlertCircle } from "lucide-react";
 import {
   applicationInputSchema,
+  computePercentage,
   GENDERS,
   MARITAL_STATUSES,
   ROTATIONS,
@@ -29,8 +30,17 @@ export default function ApplicationForm() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ApplicationInput>({ resolver: zodResolver(applicationInputSchema) });
+
+  // Live percentage from the two marks fields.
+  const obtainedRaw = watch("obtainedMarks");
+  const totalRaw = watch("totalMarks");
+  const percentText = useMemo(
+    () => computePercentage(obtainedRaw, totalRaw),
+    [obtainedRaw, totalRaw]
+  );
 
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -259,6 +269,16 @@ export default function ApplicationForm() {
         </Field>
         <Field label="Total Marks" error={errors.totalMarks} htmlFor="total">
           <input id="total" inputMode="numeric" className={ic(errors.totalMarks)} {...register("totalMarks")} />
+        </Field>
+        <Field label="Percentage (auto)" htmlFor="percentage" full>
+          <input
+            id="percentage"
+            readOnly
+            tabIndex={-1}
+            className="field-input bg-slate-50 font-mono text-slate-700"
+            value={percentText}
+            placeholder="Auto-calculated from obtained / total marks"
+          />
         </Field>
 
         <SectionTitle>Preferred Rotations</SectionTitle>

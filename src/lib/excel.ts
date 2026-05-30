@@ -1,6 +1,6 @@
 import writeXlsxFile from "write-excel-file/node";
 import type { Cell, Columns, SheetData } from "write-excel-file";
-import { referenceIdFor, type Application } from "./types";
+import { computePercentage, referenceIdFor, type Application } from "./types";
 
 const NAVY = "#05125c";
 const GREY = "#6b7280";
@@ -34,6 +34,7 @@ const COLUMN_DEFS: ReadonlyArray<{
   { header: "University Name", width: 26, value: (a) => a.universityName },
   { header: "Obtained Marks", width: 14, value: (a) => a.obtainedMarks?.toString() ?? "" },
   { header: "Total Marks", width: 12, value: (a) => a.totalMarks?.toString() ?? "" },
+  { header: "Percentage", width: 12, value: (a) => computePercentage(a.obtainedMarks, a.totalMarks) },
   { header: "Preference 1", width: 20, value: (a) => a.preference1 },
   { header: "Preference 2", width: 20, value: (a) => a.preference2 },
   { header: "Preference 3", width: 20, value: (a) => a.preference3 },

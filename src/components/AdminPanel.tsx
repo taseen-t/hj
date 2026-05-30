@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  computePercentage,
   GENDERS,
   LABELS,
   MARITAL_STATUSES,
@@ -428,6 +429,7 @@ function DetailDrawer({
     ["universityName", app.universityName],
     ["obtainedMarks", app.obtainedMarks !== undefined ? String(app.obtainedMarks) : ""],
     ["totalMarks", app.totalMarks !== undefined ? String(app.totalMarks) : ""],
+    ["percentage", computePercentage(app.obtainedMarks, app.totalMarks)],
     ["preference1", app.preference1],
     ["preference2", app.preference2],
     ["preference3", app.preference3],

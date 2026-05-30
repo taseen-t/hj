@@ -1,4 +1,4 @@
-import type { ApplicationInput } from "./types";
+import { computePercentage, type ApplicationInput } from "./types";
 
 // Builds a clean, single-page A4 PDF of the submitted application, entirely in
 // the browser (no applicant data ever leaves the page to a third party).
@@ -103,6 +103,7 @@ export async function downloadApplicationPdf(
     ["University / College Name", data.universityName || "-"],
     ["Obtained Marks", data.obtainedMarks || "-"],
     ["Total Marks", data.totalMarks || "-"],
+    ["Percentage", computePercentage(data.obtainedMarks, data.totalMarks) || "-"],
   ]);
 
   section("Preferred Rotations");

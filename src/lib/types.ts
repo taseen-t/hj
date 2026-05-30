@@ -28,6 +28,19 @@ export function referenceIdFor(app: { seq?: number; id: string }): string {
   return app.id.slice(0, 8).toUpperCase();
 }
 
+// Derived percentage from obtained/total marks. Returns "" if either is
+// missing or invalid, so callers can render it as a placeholder.
+export function computePercentage(
+  obtained?: string | number | null,
+  total?: string | number | null
+): string {
+  if (obtained == null || total == null || obtained === "" || total === "") return "";
+  const o = Number(obtained);
+  const t = Number(total);
+  if (!Number.isFinite(o) || !Number.isFinite(t) || t <= 0 || o < 0) return "";
+  return `${((o / t) * 100).toFixed(2)}%`;
+}
+
 // House-job rotations. Adjust this list to match your institution's offering.
 export const ROTATIONS = [
   "Medicine",
@@ -205,6 +218,7 @@ export const LABELS: Record<string, string> = {
   universityName: "University / College Name",
   obtainedMarks: "Obtained Marks",
   totalMarks: "Total Marks",
+  percentage: "Percentage",
   preference1: "Preference 1",
   preference2: "Preference 2",
   preference3: "Preference 3",
