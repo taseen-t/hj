@@ -1,19 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { clsx } from "clsx";
 import {
-  CheckCircle2,
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
   Check,
+  CheckCircle2,
   Copy,
   Download,
   FileCheck2,
   Loader2,
   Paperclip,
   Upload,
-  AlertCircle,
 } from "lucide-react";
 import {
   applicationInputSchema,
@@ -25,7 +27,8 @@ import {
   type ApplicationInput,
 } from "@/lib/types";
 import { downloadApplicationPdf } from "@/lib/pdf";
-import { Field, SectionTitle } from "./fields";
+import { RadioGroup, Row, TileGroup } from "./fields";
+import Stepper, { type Step } from "./Stepper";
 
 const MAX_PHOTO = 2 * 1024 * 1024;
 
@@ -39,23 +42,59 @@ type Submitted = {
   referenceId: string;
 };
 
+// Each step validates only its own fields before advancing.
+const STEPS: readonly (Step & { fields: Path<ApplicationInput>[] })[] = [
+  {
+    id: "personal",
+    label: "Personal information",
+    fields: [
+      "name",
+      "fatherName",
+      "placeOfBirth",
+      "dateOfBirth",
+      "religion",
+      "nationality",
+      "gender",
+      "cnic",
+      "maritalStatus",
+      "districtOfDomicile",
+    ],
+  },
+  {
+    id: "contact",
+    label: "Contact details",
+    fields: ["whatsapp", "guardianMobile", "mailingAddress"],
+  },
+  {
+    id: "academic",
+    label: "Academic information",
+    fields: ["universityStatus", "universityName", "obtainedMarks", "totalMarks"],
+  },
+  {
+    id: "rotations",
+    label: "Preferred rotations",
+    fields: ["preference1", "preference2", "preference3", "preference4"],
+  },
+  { id: "attachments", label: "Photo & documents", fields: [] },
+  { id: "review", label: "Confirm details", fields: [] },
+];
+
 export default function ApplicationForm() {
   const {
     register,
     handleSubmit,
     reset,
     watch,
+    setValue,
+    trigger,
+    getValues,
     formState: { errors, isSubmitting },
-  } = useForm<ApplicationInput>({ resolver: zodResolver(applicationInputSchema) });
+  } = useForm<ApplicationInput>({
+    resolver: zodResolver(applicationInputSchema),
+    mode: "onTouched",
+  });
 
-  // Live percentage from the two marks fields.
-  const obtainedRaw = watch("obtainedMarks");
-  const totalRaw = watch("totalMarks");
-  const percentText = useMemo(
-    () => computePercentage(obtainedRaw, totalRaw),
-    [obtainedRaw, totalRaw]
-  );
-
+  const [step, setStep] = useState(0);
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [pmdc, setPmdc] = useState<DocFile | null>(null);
@@ -67,6 +106,16 @@ export default function ApplicationForm() {
   const [downloading, setDownloading] = useState(false);
 
   const ic = (hasError?: unknown) => clsx("field-input", Boolean(hasError) && "invalid");
+
+  const obtainedRaw = watch("obtainedMarks");
+  const totalRaw = watch("totalMarks");
+  const percentText = useMemo(
+    () => computePercentage(obtainedRaw, totalRaw),
+    [obtainedRaw, totalRaw]
+  );
+
+  const gender = watch("gender");
+  const maritalStatus = watch("maritalStatus");
 
   function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -88,14 +137,29 @@ export default function ApplicationForm() {
     const file = e.target.files?.[0];
     setError(null);
     if (!file) return setFile(null);
-    const isAllowed =
-      file.type.startsWith("image/") || file.type === "application/pdf";
+    const isAllowed = file.type.startsWith("image/") || file.type === "application/pdf";
     if (!isAllowed) return setError("Please choose an image or a PDF file.");
     if (file.size > MAX_PHOTO) return setError("File must be under 2 MB.");
     const reader = new FileReader();
-    reader.onload = () =>
-      setFile({ dataUrl: reader.result as string, name: file.name });
+    reader.onload = () => setFile({ dataUrl: reader.result as string, name: file.name });
     reader.readAsDataURL(file);
+  }
+
+  async function goNext() {
+    const fields = STEPS[step].fields;
+    // Empty field list (attachments/review) has nothing to validate.
+    if (fields.length > 0) {
+      const ok = await trigger(fields, { shouldFocus: true });
+      if (!ok) return;
+    }
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function goBack() {
+    setServerError(null);
+    setStep((s) => Math.max(s - 1, 0));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function onSubmit(values: ApplicationInput) {
@@ -148,9 +212,11 @@ export default function ApplicationForm() {
     setPmdc(null);
     setFinalYear(null);
     setSubmitted(null);
+    setStep(0);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  /* ------------------------------ Success view ---------------------------- */
   if (submitted) {
     return (
       <div className="card overflow-hidden">
@@ -163,7 +229,6 @@ export default function ApplicationForm() {
           </p>
         </div>
         <div className="space-y-5 px-6 py-6 sm:px-10">
-          {/* Prominent Reference ID badge */}
           <div className="rounded-xl bg-brand-50 px-5 py-4 ring-1 ring-brand-100">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -182,6 +247,7 @@ export default function ApplicationForm() {
           </div>
 
           {photo && (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={photo}
               alt="Applicant"
@@ -189,15 +255,23 @@ export default function ApplicationForm() {
             />
           )}
           <dl className="grid grid-cols-1 gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
-            <Row k="Name" v={submitted.values.name} />
-            <Row k="Father Name" v={submitted.values.fatherName} />
-            <Row k="CNIC / Passport" v={submitted.values.cnic} />
-            <Row k="Date of Birth" v={submitted.values.dateOfBirth} />
-            <Row k="WhatsApp" v={submitted.values.whatsapp} />
+            <SummaryRow k="Name" v={submitted.values.name} />
+            <SummaryRow k="Father Name" v={submitted.values.fatherName} />
+            <SummaryRow k="CNIC / Passport" v={submitted.values.cnic} />
+            <SummaryRow k="Date of Birth" v={submitted.values.dateOfBirth} />
+            <SummaryRow k="WhatsApp" v={submitted.values.whatsapp} />
           </dl>
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">
-            <button className="btn btn-primary flex-1" onClick={handleDownload} disabled={downloading}>
-              {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            <button
+              className="btn btn-primary flex-1"
+              onClick={handleDownload}
+              disabled={downloading}
+            >
+              {downloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
               Download my application (PDF)
             </button>
             <button className="btn btn-ghost flex-1" onClick={startOver}>
@@ -209,253 +283,485 @@ export default function ApplicationForm() {
     );
   }
 
+  const isLast = step === STEPS.length - 1;
+
+  /* -------------------------------- Wizard -------------------------------- */
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="card p-6 sm:p-8">
-      <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
-        <SectionTitle>Personal Information</SectionTitle>
-
-        <Field
-          label={
-            <>
-              Name{" "}
-              <span className="font-normal text-slate-400">(as written on CNIC)</span>
-            </>
-          }
-          required
-          error={errors.name}
-          htmlFor="name"
-        >
-          <input id="name" className={ic(errors.name)} placeholder="Full name" {...register("name")} />
-        </Field>
-        <Field label="Father Name" required error={errors.fatherName} htmlFor="fatherName">
-          <input id="fatherName" className={ic(errors.fatherName)} placeholder="Father's name" {...register("fatherName")} />
-        </Field>
-        <Field label="Place of Birth" required error={errors.placeOfBirth} htmlFor="placeOfBirth">
-          <input id="placeOfBirth" className={ic(errors.placeOfBirth)} {...register("placeOfBirth")} />
-        </Field>
-        <Field label="Date of Birth" required error={errors.dateOfBirth} htmlFor="dateOfBirth">
-          <input id="dateOfBirth" type="date" className={ic(errors.dateOfBirth)} {...register("dateOfBirth")} />
-        </Field>
-        <Field label="Religion" required error={errors.religion} htmlFor="religion">
-          <input id="religion" className={ic(errors.religion)} {...register("religion")} />
-        </Field>
-        <Field label="Nationality" required error={errors.nationality} htmlFor="nationality">
-          <input id="nationality" className={ic(errors.nationality)} {...register("nationality")} />
-        </Field>
-        <Field label="Gender" required error={errors.gender} htmlFor="gender">
-          <select id="gender" className={ic(errors.gender)} defaultValue="" {...register("gender")}>
-            <option value="" disabled>
-              Select gender
-            </option>
-            {GENDERS.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="CNIC / Passport" required error={errors.cnic} htmlFor="cnic">
-          <input
-            id="cnic"
-            maxLength={18}
-            className={ic(errors.cnic)}
-            placeholder="35202-1234567-1"
-            {...register("cnic")}
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="card overflow-hidden">
+      <div className="grid lg:grid-cols-[248px_1fr]">
+        {/* Desktop stepper sidebar */}
+        <aside className="hidden border-r border-slate-200 bg-slate-50/60 p-6 lg:block">
+          <Stepper
+            steps={STEPS}
+            current={step}
+            orientation="vertical"
+            onStepClick={setStep}
           />
-        </Field>
-        <Field label="Marital Status" required error={errors.maritalStatus} htmlFor="maritalStatus">
-          <select id="maritalStatus" className={ic(errors.maritalStatus)} defaultValue="" {...register("maritalStatus")}>
-            <option value="" disabled>
-              Select status
-            </option>
-            {MARITAL_STATUSES.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="District of Domicile" required error={errors.districtOfDomicile} htmlFor="district">
-          <input id="district" className={ic(errors.districtOfDomicile)} {...register("districtOfDomicile")} />
-        </Field>
+        </aside>
 
-        <SectionTitle>Contact</SectionTitle>
-        <Field label="Personal WhatsApp Number" required error={errors.whatsapp} htmlFor="whatsapp">
-          <input
-            id="whatsapp"
-            inputMode="tel"
-            maxLength={15}
-            className={ic(errors.whatsapp)}
-            placeholder="03001234567"
-            {...register("whatsapp")}
-          />
-        </Field>
-        <Field label="Guardian Mobile Number" required error={errors.guardianMobile} htmlFor="guardian">
-          <input
-            id="guardian"
-            inputMode="tel"
-            maxLength={15}
-            className={ic(errors.guardianMobile)}
-            placeholder="03001234567"
-            {...register("guardianMobile")}
-          />
-        </Field>
-        <Field label="Mailing Address" required error={errors.mailingAddress} htmlFor="address" full>
-          <textarea
-            id="address"
-            rows={2}
-            className={ic(errors.mailingAddress)}
-            placeholder="e.g. House 12, Street 5, Block A, Faisalabad"
-            {...register("mailingAddress")}
-          />
-        </Field>
-
-        <SectionTitle>Academic Information</SectionTitle>
-        <Field label="University / College Status" required error={errors.universityStatus} htmlFor="uniStatus">
-          <select id="uniStatus" className={ic(errors.universityStatus)} defaultValue="" {...register("universityStatus")}>
-            <option value="" disabled>
-              Select status
-            </option>
-            {UNIVERSITY_STATUSES.map((u) => (
-              <option key={u} value={u}>
-                {u}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Name of University / College" required error={errors.universityName} htmlFor="uniName">
-          <input id="uniName" className={ic(errors.universityName)} {...register("universityName")} />
-        </Field>
-        <Field label="Obtained Marks" required error={errors.obtainedMarks} htmlFor="obtained">
-          <input id="obtained" inputMode="numeric" className={ic(errors.obtainedMarks)} {...register("obtainedMarks")} />
-        </Field>
-        <Field label="Total Marks" required error={errors.totalMarks} htmlFor="total">
-          <input id="total" inputMode="numeric" className={ic(errors.totalMarks)} {...register("totalMarks")} />
-        </Field>
-        <Field label="Percentage (auto)" htmlFor="percentage" full>
-          <input
-            id="percentage"
-            readOnly
-            tabIndex={-1}
-            className="field-input bg-slate-50 font-mono text-slate-700"
-            value={percentText}
-            placeholder="Auto-calculated from obtained / total marks"
-          />
-        </Field>
-
-        <SectionTitle>Preferred Rotations</SectionTitle>
-        <Field label="1st Preference" required error={errors.preference1} htmlFor="pref1">
-          <select id="pref1" className={ic(errors.preference1)} defaultValue="" {...register("preference1")}>
-            <option value="" disabled>
-              Select rotation
-            </option>
-            {ROTATIONS.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="2nd Preference" required error={errors.preference2} htmlFor="pref2">
-          <select id="pref2" className={ic(errors.preference2)} defaultValue="" {...register("preference2")}>
-            <option value="" disabled>
-              Select rotation
-            </option>
-            {ROTATIONS.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="3rd Preference" required error={errors.preference3} htmlFor="pref3">
-          <select id="pref3" className={ic(errors.preference3)} defaultValue="" {...register("preference3")}>
-            <option value="" disabled>
-              Select rotation
-            </option>
-            {ROTATIONS.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="4th Preference" required error={errors.preference4} htmlFor="pref4">
-          <select id="pref4" className={ic(errors.preference4)} defaultValue="" {...register("preference4")}>
-            <option value="" disabled>
-              Select rotation
-            </option>
-            {ROTATIONS.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <SectionTitle>Photograph</SectionTitle>
-        <div className="sm:col-span-2">
-          <label
-            htmlFor="photo"
-            className="flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-4 transition hover:border-brand-300 hover:bg-brand-50"
-          >
-            {photo ? (
-              <img src={photo} alt="Preview" className="h-20 w-16 rounded-md object-cover ring-1 ring-slate-200" />
-            ) : (
-              <span className="flex h-20 w-16 items-center justify-center rounded-md bg-white ring-1 ring-slate-200">
-                <Upload className="h-6 w-6 text-brand-400" />
-              </span>
-            )}
-            <div className="text-sm">
-              <p className="font-semibold text-brand-700">{photo ? "Change photo" : "Upload passport-size photo"}</p>
-              <p className="text-slate-500">PNG or JPG, up to 2 MB</p>
-            </div>
-          </label>
-          <input id="photo" type="file" accept="image/*" className="hidden" onChange={onPhoto} />
-          {photoError && <p className="field-error">{photoError}</p>}
-        </div>
-
-        <SectionTitle>Supporting Documents</SectionTitle>
-        <DocumentUpload
-          id="pmdcCertificate"
-          title="Attach PMDC Certificate"
-          file={pmdc}
-          error={pmdcError}
-          onChange={(e) => onDocument(e, setPmdc, setPmdcError)}
-        />
-        <DocumentUpload
-          id="finalYearResult"
-          title="Attach Final Year result card"
-          file={finalYear}
-          error={finalYearError}
-          onChange={(e) => onDocument(e, setFinalYear, setFinalYearError)}
-        />
-      </div>
-
-      <div className="mt-8 space-y-4">
-        {serverError && (
-          <div className="flex items-start gap-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-700 ring-1 ring-rose-200">
-            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-            <span>{serverError}</span>
+        <div className="p-6 sm:p-8 lg:p-10">
+          {/* Compact stepper for small screens */}
+          <div className="mb-7 lg:hidden">
+            <Stepper
+              steps={STEPS}
+              current={step}
+              orientation="horizontal"
+              onStepClick={setStep}
+            />
           </div>
-        )}
-        <div className="flex items-center justify-between gap-4">
-          <p className="text-xs text-slate-400">Fields marked * are required.</p>
-          <button type="submit" className="btn btn-primary px-8" disabled={isSubmitting}>
-            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            {isSubmitting ? "Submitting..." : "Submit Application"}
-          </button>
+
+          <h2 className="hidden text-xl font-bold text-slate-900 lg:block">
+            {STEPS[step].label}
+          </h2>
+          <p className="hidden text-sm text-slate-400 lg:block">
+            Step {step + 1} of {STEPS.length}
+          </p>
+
+          <div className="mt-6">
+            {step === 0 && (
+              <>
+                <Row
+                  label={
+                    <>
+                      Name{" "}
+                      <span className="font-normal text-slate-400">(as written on CNIC)</span>
+                    </>
+                  }
+                  required
+                  error={errors.name}
+                  htmlFor="name"
+                >
+                  <input id="name" className={ic(errors.name)} placeholder="Full name" {...register("name")} />
+                </Row>
+                <Row label="Father name" required error={errors.fatherName} htmlFor="fatherName">
+                  <input
+                    id="fatherName"
+                    className={ic(errors.fatherName)}
+                    placeholder="Father's name"
+                    {...register("fatherName")}
+                  />
+                </Row>
+                <Row label="Place of birth" required error={errors.placeOfBirth} htmlFor="placeOfBirth">
+                  <input id="placeOfBirth" className={ic(errors.placeOfBirth)} {...register("placeOfBirth")} />
+                </Row>
+                <Row label="Date of birth" required error={errors.dateOfBirth} htmlFor="dateOfBirth">
+                  <input
+                    id="dateOfBirth"
+                    type="date"
+                    className={ic(errors.dateOfBirth)}
+                    {...register("dateOfBirth")}
+                  />
+                </Row>
+                <Row label="Religion" required error={errors.religion} htmlFor="religion">
+                  <input id="religion" className={ic(errors.religion)} {...register("religion")} />
+                </Row>
+                <Row label="Nationality" required error={errors.nationality} htmlFor="nationality">
+                  <input id="nationality" className={ic(errors.nationality)} {...register("nationality")} />
+                </Row>
+                <Row label="Gender" required error={errors.gender}>
+                  <TileGroup
+                    name="Gender"
+                    value={gender ?? ""}
+                    onChange={(v) =>
+                      setValue("gender", v as ApplicationInput["gender"], {
+                        shouldValidate: true,
+                      })
+                    }
+                    options={GENDERS.map((g) => ({ value: g, label: g }))}
+                  />
+                </Row>
+                <Row
+                  label="CNIC / Passport"
+                  hint="Digits and dashes only"
+                  required
+                  error={errors.cnic}
+                  htmlFor="cnic"
+                >
+                  <input
+                    id="cnic"
+                    maxLength={18}
+                    className={ic(errors.cnic)}
+                    placeholder="35202-1234567-1"
+                    {...register("cnic")}
+                  />
+                </Row>
+                <Row label="Marital status" required error={errors.maritalStatus}>
+                  <RadioGroup
+                    name="Marital status"
+                    options={MARITAL_STATUSES}
+                    value={maritalStatus ?? ""}
+                    onChange={(v) =>
+                      setValue("maritalStatus", v as ApplicationInput["maritalStatus"], {
+                        shouldValidate: true,
+                      })
+                    }
+                  />
+                </Row>
+                <Row
+                  label="District of domicile"
+                  required
+                  error={errors.districtOfDomicile}
+                  htmlFor="district"
+                >
+                  <input
+                    id="district"
+                    className={ic(errors.districtOfDomicile)}
+                    {...register("districtOfDomicile")}
+                  />
+                </Row>
+              </>
+            )}
+
+            {step === 1 && (
+              <>
+                <Row
+                  label="Personal WhatsApp number"
+                  hint="We use this to contact you"
+                  required
+                  error={errors.whatsapp}
+                  htmlFor="whatsapp"
+                >
+                  <input
+                    id="whatsapp"
+                    inputMode="tel"
+                    maxLength={15}
+                    className={ic(errors.whatsapp)}
+                    placeholder="03001234567"
+                    {...register("whatsapp")}
+                  />
+                </Row>
+                <Row
+                  label="Guardian mobile number"
+                  required
+                  error={errors.guardianMobile}
+                  htmlFor="guardian"
+                >
+                  <input
+                    id="guardian"
+                    inputMode="tel"
+                    maxLength={15}
+                    className={ic(errors.guardianMobile)}
+                    placeholder="03001234567"
+                    {...register("guardianMobile")}
+                  />
+                </Row>
+                <Row
+                  label="Mailing address"
+                  required
+                  error={errors.mailingAddress}
+                  htmlFor="address"
+                >
+                  <textarea
+                    id="address"
+                    rows={3}
+                    className={ic(errors.mailingAddress)}
+                    placeholder="e.g. House 12, Street 5, Block A, Faisalabad"
+                    {...register("mailingAddress")}
+                  />
+                </Row>
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                <Row
+                  label="University / college status"
+                  required
+                  error={errors.universityStatus}
+                  htmlFor="uniStatus"
+                >
+                  <select
+                    id="uniStatus"
+                    className={ic(errors.universityStatus)}
+                    defaultValue=""
+                    {...register("universityStatus")}
+                  >
+                    <option value="" disabled>
+                      Select status
+                    </option>
+                    {UNIVERSITY_STATUSES.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </select>
+                </Row>
+                <Row
+                  label="Name of university / college"
+                  required
+                  error={errors.universityName}
+                  htmlFor="uniName"
+                >
+                  <input id="uniName" className={ic(errors.universityName)} {...register("universityName")} />
+                </Row>
+                <Row label="Obtained marks" required error={errors.obtainedMarks} htmlFor="obtained">
+                  <input
+                    id="obtained"
+                    inputMode="numeric"
+                    className={ic(errors.obtainedMarks)}
+                    {...register("obtainedMarks")}
+                  />
+                </Row>
+                <Row label="Total marks" required error={errors.totalMarks} htmlFor="total">
+                  <input
+                    id="total"
+                    inputMode="numeric"
+                    className={ic(errors.totalMarks)}
+                    {...register("totalMarks")}
+                  />
+                </Row>
+                <Row label="Percentage" hint="Calculated automatically" htmlFor="percentage">
+                  <input
+                    id="percentage"
+                    readOnly
+                    tabIndex={-1}
+                    className="field-input bg-slate-50 font-mono text-slate-700"
+                    value={percentText}
+                    placeholder="Auto-calculated from obtained / total marks"
+                  />
+                </Row>
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                {(
+                  [
+                    ["1st preference", "preference1", errors.preference1],
+                    ["2nd preference", "preference2", errors.preference2],
+                    ["3rd preference", "preference3", errors.preference3],
+                    ["4th preference", "preference4", errors.preference4],
+                  ] as const
+                ).map(([label, name, err]) => (
+                  <Row key={name} label={label} required error={err} htmlFor={name}>
+                    <select
+                      id={name}
+                      className={ic(err)}
+                      defaultValue=""
+                      {...register(name as Path<ApplicationInput>)}
+                    >
+                      <option value="" disabled>
+                        Select rotation
+                      </option>
+                      {ROTATIONS.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  </Row>
+                ))}
+              </>
+            )}
+
+            {step === 4 && (
+              <>
+                <Row label="Passport-size photo" hint="PNG or JPG, up to 2 MB">
+                  <label
+                    htmlFor="photo"
+                    className="flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-4 transition hover:border-brand-300 hover:bg-brand-50"
+                  >
+                    {photo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={photo}
+                        alt="Preview"
+                        className="h-20 w-16 rounded-md object-cover ring-1 ring-slate-200"
+                      />
+                    ) : (
+                      <span className="flex h-20 w-16 items-center justify-center rounded-md bg-white ring-1 ring-slate-200">
+                        <Upload className="h-6 w-6 text-brand-400" />
+                      </span>
+                    )}
+                    <div className="text-sm">
+                      <p className="font-semibold text-brand-700">
+                        {photo ? "Change photo" : "Upload photo"}
+                      </p>
+                      <p className="text-slate-500">PNG or JPG, up to 2 MB</p>
+                    </div>
+                  </label>
+                  <input
+                    id="photo"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={onPhoto}
+                  />
+                  {photoError && <p className="field-error">{photoError}</p>}
+                </Row>
+                <Row label="PMDC certificate" hint="Optional">
+                  <DocumentUpload
+                    id="pmdcCertificate"
+                    title="Attach PMDC Certificate"
+                    file={pmdc}
+                    error={pmdcError}
+                    onChange={(e) => onDocument(e, setPmdc, setPmdcError)}
+                  />
+                </Row>
+                <Row label="Final year result card" hint="Optional">
+                  <DocumentUpload
+                    id="finalYearResult"
+                    title="Attach Final Year result card"
+                    file={finalYear}
+                    error={finalYearError}
+                    onChange={(e) => onDocument(e, setFinalYear, setFinalYearError)}
+                  />
+                </Row>
+              </>
+            )}
+
+            {step === 5 && (
+              <ReviewStep
+                values={getValues()}
+                percent={percentText}
+                photo={photo}
+                pmdc={pmdc}
+                finalYear={finalYear}
+                onEdit={setStep}
+              />
+            )}
+          </div>
+
+          {/* Navigation */}
+          <div className="mt-8 space-y-4">
+            {serverError && (
+              <div className="flex items-start gap-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-700 ring-1 ring-rose-200">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{serverError}</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-3">
+              {step > 0 ? (
+                <button type="button" onClick={goBack} className="btn btn-ghost">
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </button>
+              ) : (
+                <p className="text-xs text-slate-400">Fields marked * are required.</p>
+              )}
+
+              {isLast ? (
+                <button type="submit" className="btn btn-primary px-8" disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {isSubmitting ? "Submitting..." : "Submit application"}
+                </button>
+              ) : (
+                <button type="button" onClick={goNext} className="btn btn-primary px-8">
+                  Continue
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </form>
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
+/* -------------------------------- Helpers -------------------------------- */
+
+function ReviewStep({
+  values,
+  percent,
+  photo,
+  pmdc,
+  finalYear,
+  onEdit,
+}: {
+  values: Partial<ApplicationInput>;
+  percent: string;
+  photo: string | null;
+  pmdc: DocFile | null;
+  finalYear: DocFile | null;
+  onEdit: (step: number) => void;
+}) {
+  const groups: { title: string; step: number; items: [string, string][] }[] = [
+    {
+      title: "Personal information",
+      step: 0,
+      items: [
+        ["Name", values.name ?? ""],
+        ["Father name", values.fatherName ?? ""],
+        ["Place of birth", values.placeOfBirth ?? ""],
+        ["Date of birth", values.dateOfBirth ?? ""],
+        ["Religion", values.religion ?? ""],
+        ["Nationality", values.nationality ?? ""],
+        ["Gender", values.gender ?? ""],
+        ["CNIC / Passport", values.cnic ?? ""],
+        ["Marital status", values.maritalStatus ?? ""],
+        ["District of domicile", values.districtOfDomicile ?? ""],
+      ],
+    },
+    {
+      title: "Contact details",
+      step: 1,
+      items: [
+        ["WhatsApp", values.whatsapp ?? ""],
+        ["Guardian mobile", values.guardianMobile ?? ""],
+        ["Mailing address", values.mailingAddress ?? ""],
+      ],
+    },
+    {
+      title: "Academic information",
+      step: 2,
+      items: [
+        ["University status", values.universityStatus ?? ""],
+        ["University name", values.universityName ?? ""],
+        ["Obtained marks", values.obtainedMarks ?? ""],
+        ["Total marks", values.totalMarks ?? ""],
+        ["Percentage", percent],
+      ],
+    },
+    {
+      title: "Preferred rotations",
+      step: 3,
+      items: [
+        ["1st preference", values.preference1 ?? ""],
+        ["2nd preference", values.preference2 ?? ""],
+        ["3rd preference", values.preference3 ?? ""],
+        ["4th preference", values.preference4 ?? ""],
+      ],
+    },
+    {
+      title: "Photo & documents",
+      step: 4,
+      items: [
+        ["Photograph", photo ? "Attached" : "Not attached"],
+        ["PMDC certificate", pmdc ? pmdc.name : "Not attached"],
+        ["Final year result", finalYear ? finalYear.name : "Not attached"],
+      ],
+    },
+  ];
+
   return (
-    <div className="flex justify-between gap-4 border-b border-dashed border-slate-200 py-1.5">
-      <dt className="text-slate-500">{k}</dt>
-      <dd className="font-medium text-slate-900">{v}</dd>
+    <div className="space-y-6">
+      <p className="text-sm text-slate-500">
+        Please check your details below. Use <span className="font-medium">Edit</span> to
+        change anything before submitting.
+      </p>
+      {groups.map((g) => (
+        <div key={g.title} className="rounded-xl ring-1 ring-slate-200">
+          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2.5">
+            <h3 className="text-sm font-semibold text-slate-900">{g.title}</h3>
+            <button
+              type="button"
+              onClick={() => onEdit(g.step)}
+              className="text-xs font-semibold text-brand-600 hover:text-brand-700"
+            >
+              Edit
+            </button>
+          </div>
+          <dl className="grid grid-cols-1 gap-x-8 gap-y-1.5 px-4 py-3 text-sm sm:grid-cols-2">
+            {g.items.map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-4 py-0.5">
+                <dt className="text-slate-500">{k}</dt>
+                <dd className="text-right font-medium text-slate-900">{v || "—"}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      ))}
     </div>
   );
 }
@@ -501,6 +807,15 @@ function DocumentUpload({
         onChange={onChange}
       />
       {error && <p className="field-error">{error}</p>}
+    </div>
+  );
+}
+
+function SummaryRow({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex justify-between gap-4 border-b border-dashed border-slate-200 py-1.5">
+      <dt className="text-slate-500">{k}</dt>
+      <dd className="font-medium text-slate-900">{v}</dd>
     </div>
   );
 }
