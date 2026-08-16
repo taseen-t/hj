@@ -3,7 +3,6 @@ import type { Cell, Columns, SheetData } from "write-excel-file";
 import { computePercentage, referenceIdFor, type Application } from "./types";
 
 const NAVY = "#05125c";
-const GREY = "#6b7280";
 
 function photoCell(url: string | null): string {
   if (!url) return "";
@@ -70,24 +69,7 @@ export async function buildWorkbook(apps: Application[]): Promise<Buffer> {
     )
   );
 
-  const spacerRow: Cell[] = Array.from({ length: numCols }, () => ({
-    value: "",
-    type: String,
-  }));
-
-  // Credit footer: merged across all columns, italic, grey.
-  const creditRow: Cell[] = [
-    {
-      value: "Software Developed by Dr. Rabiya Tariq, Mohammad Taseen Tariq & Zafar Manzoor",
-      type: String,
-      fontStyle: "italic",
-      color: GREY,
-      span: numCols,
-    },
-    ...Array<Cell>(numCols - 1).fill(null),
-  ];
-
-  const data: SheetData = [headerRow, ...dataRows, spacerRow, creditRow];
+  const data: SheetData = [headerRow, ...dataRows];
   const columns: Columns = COLUMN_DEFS.map((c) => ({ width: c.width }));
 
   return await writeXlsxFile(data, {

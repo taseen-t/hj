@@ -159,12 +159,6 @@ export async function downloadApplicationPdf(
     M,
     811
   );
-  doc.text(
-    "Software developed by Dr. Rabiya Tariq, Mohammad Taseen Tariq & Zafar Manzoor.",
-    W - M,
-    824,
-    { align: "right" }
-  );
 
   const safe = data.name.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "applicant";
   doc.save(`HouseJob-Application-${safe}.pdf`);
