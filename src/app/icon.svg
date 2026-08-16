@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#16240c"/>
-  <g fill="#ffffff" transform="translate(16 16) scale(0.72) translate(-16 -16)">
+  <g fill="#aacc76">
     <circle cx="16" cy="16" r="5"/>
     <circle cx="16" cy="4.6" r="3.5"/>
     <circle cx="16" cy="27.4" r="3.5"/>

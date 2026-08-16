@@ -13,9 +13,7 @@ export default function Navbar() {
     <nav className="sticky top-0 z-40 border-b border-slate-200 bg-white/85 backdrop-blur">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
         <Link href="/" className="flex min-w-0 items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-950 text-white">
-            <Logo className="h-5 w-5" />
-          </span>
+          <Logo className="h-9 w-9 shrink-0 text-brand-400" />
           <span className="min-w-0">
             <span className="block truncate text-sm font-bold leading-tight text-brand-950 sm:text-[15px]">
               House Job Application{" "}

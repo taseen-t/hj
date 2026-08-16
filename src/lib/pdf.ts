@@ -25,7 +25,7 @@ export async function downloadApplicationPdf(
   const LOGO_X = M + 11;
   const LOGO_Y = 52;
   const S = 0.62; // 32-unit grid -> points
-  doc.setFillColor(255, 255, 255);
+  doc.setFillColor(0xaa, 0xcc, 0x76); // brand green mark
   for (const d of LOGO_DOTS) {
     doc.circle(LOGO_X + (d.cx - 16) * S, LOGO_Y + (d.cy - 16) * S, d.r * S, "F");
   }

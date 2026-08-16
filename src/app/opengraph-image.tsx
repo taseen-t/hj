@@ -22,7 +22,7 @@ export default function Image() {
         }}
       >
         <div style={{ display: "flex", marginBottom: 34 }}>
-          <svg width="86" height="86" viewBox="0 0 32 32" fill="#ffffff">
+          <svg width="86" height="86" viewBox="0 0 32 32" fill="#aacc76">
             <circle cx="16" cy="16" r="5" />
             <circle cx="16" cy="4.6" r="3.5" />
             <circle cx="16" cy="27.4" r="3.5" />
