@@ -114,6 +114,20 @@ export default function ApplicationForm() {
     [obtainedRaw, totalRaw]
   );
 
+  // Checked live rather than via the schema: the obtained <= total rule is a
+  // whole-object refine, and Zod skips refines until every field parses — so
+  // at this step (later steps still blank) it would never fire.
+  const marksError = useMemo(() => {
+    if (!obtainedRaw || !totalRaw) return null;
+    const o = Number(obtainedRaw);
+    const t = Number(totalRaw);
+    if (!Number.isFinite(o) || !Number.isFinite(t) || t <= 0) return null;
+    if (o > t) {
+      return "Obtained marks cannot be greater than total marks. Please correct them.";
+    }
+    return null;
+  }, [obtainedRaw, totalRaw]);
+
   const gender = watch("gender");
   const maritalStatus = watch("maritalStatus");
 
@@ -151,6 +165,11 @@ export default function ApplicationForm() {
     if (fields.length > 0) {
       const ok = await trigger(fields, { shouldFocus: true });
       if (!ok) return;
+    }
+    // The marks comparison isn't covered by the per-step schema check above.
+    if (STEPS[step].id === "academic" && marksError) {
+      document.getElementById("total")?.focus();
+      return;
     }
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -498,7 +517,7 @@ export default function ApplicationForm() {
                   <input
                     id="obtained"
                     inputMode="numeric"
-                    className={ic(errors.obtainedMarks)}
+                    className={ic(errors.obtainedMarks || marksError)}
                     {...register("obtainedMarks")}
                   />
                 </Row>
@@ -506,17 +525,23 @@ export default function ApplicationForm() {
                   <input
                     id="total"
                     inputMode="numeric"
-                    className={ic(errors.totalMarks)}
+                    className={ic(errors.totalMarks || marksError)}
                     {...register("totalMarks")}
                   />
+                  {!errors.totalMarks && marksError && (
+                    <p className="field-error">{marksError}</p>
+                  )}
                 </Row>
                 <Row label="Percentage" hint="Calculated automatically" htmlFor="percentage">
                   <input
                     id="percentage"
                     readOnly
                     tabIndex={-1}
-                    className="field-input bg-slate-50 font-mono text-slate-700"
-                    value={percentText}
+                    className={clsx(
+                      "field-input bg-slate-50 font-mono",
+                      marksError ? "text-rose-600" : "text-slate-700"
+                    )}
+                    value={marksError ? "—" : percentText}
                     placeholder="Auto-calculated from obtained / total marks"
                   />
                 </Row>
