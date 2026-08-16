@@ -16,10 +16,10 @@ export async function downloadApplicationPdf(
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   const M = 40;
-  const navy: [number, number, number] = [5, 18, 92];
+  const brandDark: [number, number, number] = [0x37, 0x52, 0x1e]; // brand-800
 
   /* ---- Header band ---- */
-  doc.setFillColor(...navy);
+  doc.setFillColor(...brandDark);
   doc.rect(0, 0, W, 104, "F");
   // Logo mark (dot-cross) at the left of the header band.
   const LOGO_X = M + 11;
@@ -56,7 +56,7 @@ export async function downloadApplicationPdf(
   if (data.referenceId) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.setTextColor(...navy);
+    doc.setTextColor(...brandDark);
     doc.text(`REFERENCE ID: ${data.referenceId}`, W - M, 122, { align: "right" });
   }
 
@@ -79,9 +79,9 @@ export async function downloadApplicationPdf(
   const rowH = 38;
 
   const section = (title: string) => {
-    doc.setFillColor(238, 242, 255);
+    doc.setFillColor(244, 250, 236); // brand-50
     doc.rect(M, y - 12, W - M * 2, 22, "F");
-    doc.setTextColor(...navy);
+    doc.setTextColor(...brandDark);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10.5);
     doc.text(title, M + 8, y + 3);
@@ -129,7 +129,7 @@ export async function downloadApplicationPdf(
     if (!p) return;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10.5);
-    doc.setTextColor(...navy);
+    doc.setTextColor(...brandDark);
     doc.text(`${i + 1}.`, M + 4, y);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(20, 20, 30);

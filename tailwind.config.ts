@@ -5,18 +5,20 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Green scale built around the brand mark's #aacc76 (kept as 400).
+        // 600 is the primary action colour and clears 4.5:1 with white text.
         brand: {
-          50: "#eef2ff",
-          100: "#e0e7ff",
-          200: "#c7d2fe",
-          300: "#a5b4fc",
-          400: "#818cf8",
-          500: "#6366f1",
-          600: "#4f46e5",
-          700: "#4338ca",
-          800: "#3730a3",
-          900: "#1e1b4b",
-          950: "#05125c",
+          50: "#f4faec",
+          100: "#e6f3d4",
+          200: "#d2e9b2",
+          300: "#bbdc8d",
+          400: "#aacc76",
+          500: "#7ba845",
+          600: "#547f2b",
+          700: "#446724",
+          800: "#37521e",
+          900: "#2e441b",
+          950: "#16240c",
         },
       },
       fontFamily: {
@@ -25,7 +27,7 @@ const config: Config = {
       },
       boxShadow: {
         card: "0 1px 3px rgba(16,24,40,.1), 0 1px 2px rgba(16,24,40,.06)",
-        lift: "0 10px 30px -12px rgba(5,18,92,.25)",
+        lift: "0 10px 30px -12px rgba(22,36,12,.25)",
       },
     },
   },

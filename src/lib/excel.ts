@@ -2,7 +2,7 @@ import writeXlsxFile from "write-excel-file/node";
 import type { Cell, Columns, SheetData } from "write-excel-file";
 import { computePercentage, referenceIdFor, type Application } from "./types";
 
-const NAVY = "#05125c";
+const HEADER_BG = "#37521e";
 
 function photoCell(url: string | null): string {
   if (!url) return "";
@@ -56,7 +56,7 @@ export async function buildWorkbook(apps: Application[]): Promise<Buffer> {
     type: String,
     fontWeight: "bold",
     color: "#ffffff",
-    backgroundColor: NAVY,
+    backgroundColor: HEADER_BG,
     height: 22,
   }));
 
