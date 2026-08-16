@@ -1,9 +1,16 @@
 import { computePercentage, type ApplicationInput } from "./types";
+import { LOGO_DOTS } from "@/components/Logo";
 
 // Builds a clean, single-page A4 PDF of the submitted application, entirely in
 // the browser (no applicant data ever leaves the page to a third party).
 export async function downloadApplicationPdf(
-  data: ApplicationInput & { photo?: string; referenceId?: string }
+  data: ApplicationInput & {
+    photo?: string;
+    referenceId?: string;
+    // Admin-side downloads pass stored URLs instead of the raw data URLs.
+    pmdcCertificateUrl?: string | null;
+    finalYearResultUrl?: string | null;
+  }
 ): Promise<void> {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -14,14 +21,24 @@ export async function downloadApplicationPdf(
   /* ---- Header band ---- */
   doc.setFillColor(...navy);
   doc.rect(0, 0, W, 104, "F");
+  // Logo mark (dot-cross) at the left of the header band.
+  const LOGO_X = M + 11;
+  const LOGO_Y = 52;
+  const S = 0.62; // 32-unit grid -> points
+  doc.setFillColor(255, 255, 255);
+  for (const d of LOGO_DOTS) {
+    doc.circle(LOGO_X + (d.cx - 16) * S, LOGO_Y + (d.cy - 16) * S, d.r * S, "F");
+  }
+
+  const TEXT_X = M + 34;
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(16);
-  doc.text("APPLICATION FOR HOUSE JOB", M, 38);
+  doc.text("APPLICATION FOR HOUSE JOB", TEXT_X, 38);
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
-  doc.text("Annual Session 2026 - 2027", M, 58);
-  doc.text("Allied Hospital-I / II & FTH, Faisalabad", M, 76);
+  doc.text("Annual Session 2026 - 2027", TEXT_X, 58);
+  doc.text("Allied Hospital-I / II & FTH, Faisalabad", TEXT_X, 76);
 
   /* ---- Photo ---- */
   if (data.photo) {
@@ -119,6 +136,17 @@ export async function downloadApplicationPdf(
     doc.text(p, M + 22, y);
     y += 20;
   });
+
+  y += 12;
+  section("Supporting Documents");
+  const attached = (v: unknown) => (v ? "Attached" : "Not attached");
+  pairs([
+    ["PMDC Certificate", attached(data.pmdcCertificate || data.pmdcCertificateUrl)],
+    [
+      "Final Year Result Card",
+      attached(data.finalYearResult || data.finalYearResultUrl),
+    ],
+  ]);
 
   /* ---- Footer ---- */
   doc.setDrawColor(220, 220, 228);

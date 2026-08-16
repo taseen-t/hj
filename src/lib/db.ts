@@ -17,12 +17,23 @@ export interface Store {
 const newId = () => crypto.randomUUID();
 const newToken = () => crypto.randomBytes(24).toString("hex");
 
+interface Attachments {
+  photoUrl: string | null;
+  pmdcCertificateUrl: string | null;
+  finalYearResultUrl: string | null;
+}
+
 function buildRecord(
   input: ApplicationInput,
-  photoUrl: string | null,
+  attachments: Attachments,
   id: string = newId()
 ): Application {
-  const { photo: _photo, ...rest } = input;
+  const {
+    photo: _photo,
+    pmdcCertificate: _pmdc,
+    finalYearResult: _finalYear,
+    ...rest
+  } = input;
   return {
     ...rest,
     universityStatus: rest.universityStatus || "",
@@ -35,19 +46,23 @@ function buildRecord(
     id,
     seq: 0, // assigned by the store (auto-increment in Supabase, max+1 in local).
     createdAt: new Date().toISOString(),
-    photoUrl,
+    photoUrl: attachments.photoUrl,
+    pmdcCertificateUrl: attachments.pmdcCertificateUrl,
+    finalYearResultUrl: attachments.finalYearResultUrl,
     assignedRotation: null,
     downloadToken: newToken(),
   };
 }
 
+// Handles image/* and application/pdf data URLs.
 function decodeDataUrl(
   dataUrl: string
 ): { buffer: Buffer; contentType: string; ext: string } | null {
-  const m = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  const m = dataUrl.match(/^data:([a-zA-Z0-9.+\/-]+);base64,(.+)$/);
   if (!m) return null;
   const contentType = m[1];
-  const ext = contentType.split("/")[1].replace("jpeg", "jpg").replace("svg+xml", "svg");
+  let ext = (contentType.split("/")[1] || "bin").toLowerCase();
+  ext = ext.replace("jpeg", "jpg").replace("svg+xml", "svg");
   return { buffer: Buffer.from(m[2], "base64"), contentType, ext };
 }
 
@@ -88,7 +103,11 @@ class LocalStore implements Store {
       const rows = await readAll();
       const nextSeq =
         rows.reduce((m, r) => Math.max(m, r.seq || 0), 0) + 1;
-      const rec = buildRecord(input, input.photo || null);
+      const rec = buildRecord(input, {
+        photoUrl: input.photo || null,
+        pmdcCertificateUrl: input.pmdcCertificate || null,
+        finalYearResultUrl: input.finalYearResult || null,
+      });
       rec.seq = nextSeq;
       rows.push(rec);
       await writeAll(rows);
@@ -162,6 +181,8 @@ function toRow(a: Application) {
     preference_4: a.preference4 || null,
     assigned_rotation: a.assignedRotation,
     photo_url: a.photoUrl,
+    pmdc_certificate_url: a.pmdcCertificateUrl,
+    final_year_result_url: a.finalYearResultUrl,
     download_token: a.downloadToken,
   };
 }
@@ -196,29 +217,57 @@ function fromRow(r: Record<string, unknown>): Application {
     preference4: s(r.preference_4),
     assignedRotation: r.assigned_rotation == null ? null : String(r.assigned_rotation),
     photoUrl: r.photo_url == null ? null : String(r.photo_url),
+    pmdcCertificateUrl:
+      r.pmdc_certificate_url == null ? null : String(r.pmdc_certificate_url),
+    finalYearResultUrl:
+      r.final_year_result_url == null ? null : String(r.final_year_result_url),
     downloadToken: s(r.download_token),
   };
 }
 
 class SupabaseStore implements Store {
+  // Uploads one data-URL attachment and returns its public URL.
+  // `suffix` keeps the three files for an application distinct in the bucket.
+  private async uploadAttachment(
+    id: string,
+    suffix: string,
+    dataUrl: string | undefined,
+    label: string
+  ): Promise<string | null> {
+    if (!dataUrl) return null;
+    const decoded = decodeDataUrl(dataUrl);
+    if (!decoded) return null;
+    const sb = getSupabase();
+    const filePath = suffix ? `${id}-${suffix}.${decoded.ext}` : `${id}.${decoded.ext}`;
+    const up = await sb.storage
+      .from(photoBucket())
+      .upload(filePath, decoded.buffer, {
+        contentType: decoded.contentType,
+        upsert: true,
+      });
+    if (up.error) throw new Error(`${label} upload failed: ${up.error.message}`);
+    return sb.storage.from(photoBucket()).getPublicUrl(filePath).data.publicUrl;
+  }
+
   async create(input: ApplicationInput): Promise<Application> {
     const id = newId();
-    let photoUrl: string | null = null;
 
-    if (input.photo) {
-      const decoded = decodeDataUrl(input.photo);
-      if (decoded) {
-        const sb = getSupabase();
-        const filePath = `${id}.${decoded.ext}`;
-        const up = await sb.storage
-          .from(photoBucket())
-          .upload(filePath, decoded.buffer, { contentType: decoded.contentType, upsert: true });
-        if (up.error) throw new Error(`Photo upload failed: ${up.error.message}`);
-        photoUrl = sb.storage.from(photoBucket()).getPublicUrl(filePath).data.publicUrl;
-      }
-    }
+    const [photoUrl, pmdcCertificateUrl, finalYearResultUrl] = await Promise.all([
+      this.uploadAttachment(id, "", input.photo, "Photo"),
+      this.uploadAttachment(id, "pmdc", input.pmdcCertificate, "PMDC Certificate"),
+      this.uploadAttachment(
+        id,
+        "final-year",
+        input.finalYearResult,
+        "Final year result card"
+      ),
+    ]);
 
-    const rec = buildRecord(input, photoUrl, id);
+    const rec = buildRecord(
+      input,
+      { photoUrl, pmdcCertificateUrl, finalYearResultUrl },
+      id
+    );
     const { data, error } = await getSupabase()
       .from("applications")
       .insert(toRow(rec))
@@ -276,6 +325,8 @@ class SupabaseStore implements Store {
       preference4: "preference_4",
       assignedRotation: "assigned_rotation",
       photoUrl: "photo_url",
+      pmdcCertificateUrl: "pmdc_certificate_url",
+      finalYearResultUrl: "final_year_result_url",
     };
     const row: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(patch)) {
@@ -303,15 +354,26 @@ class SupabaseStore implements Store {
 
   async remove(id: string): Promise<boolean> {
     const sb = getSupabase();
-    // Best-effort: remove the applicant's photo from storage so it isn't orphaned.
+    // Best-effort: remove the applicant's uploads from storage so they aren't
+    // orphaned. Covers the photo and both supporting documents.
     const existing = await this.get(id);
-    if (existing?.photoUrl) {
+    if (existing) {
       const marker = `/object/public/${photoBucket()}/`;
-      const i = existing.photoUrl.indexOf(marker);
-      if (i >= 0) {
-        const path = existing.photoUrl.slice(i + marker.length);
-        const { error: rmErr } = await sb.storage.from(photoBucket()).remove([path]);
-        if (rmErr) console.error("Failed to remove photo from storage:", rmErr.message);
+      const paths = [
+        existing.photoUrl,
+        existing.pmdcCertificateUrl,
+        existing.finalYearResultUrl,
+      ]
+        .filter((u): u is string => Boolean(u))
+        .map((url) => {
+          const i = url.indexOf(marker);
+          return i >= 0 ? url.slice(i + marker.length) : null;
+        })
+        .filter((p): p is string => Boolean(p));
+
+      if (paths.length > 0) {
+        const { error: rmErr } = await sb.storage.from(photoBucket()).remove(paths);
+        if (rmErr) console.error("Failed to remove files from storage:", rmErr.message);
       }
     }
     const { error } = await sb.from("applications").delete().eq("id", id);

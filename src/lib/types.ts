@@ -114,6 +114,25 @@ const marksRefineMsg = {
   path: ["obtainedMarks"],
 };
 
+/* ---------------------------- Attachments -------------------------------- */
+
+// Attachments travel as data URLs inside the submission JSON. Base64 inflates
+// the payload by ~4/3, so the guard here is on the encoded string length.
+export const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
+const MAX_ATTACHMENT_CHARS = Math.ceil(MAX_ATTACHMENT_BYTES * 1.4);
+
+// A supporting document: a scan/photo or a PDF. Always optional.
+const documentField = (label: string) =>
+  z
+    .string()
+    .regex(
+      /^data:(image\/[a-zA-Z0-9.+-]+|application\/pdf);base64,/,
+      `${label} must be an image or a PDF`
+    )
+    .max(MAX_ATTACHMENT_CHARS, `${label} is too large (max 2 MB)`)
+    .optional()
+    .or(z.literal(""));
+
 // Base object so we can derive both the input schema and a partial update schema.
 const applicationFields = z.object({
   name: requiredText("Name"),
@@ -149,11 +168,20 @@ const applicationFields = z.object({
   photo: z
     .string()
     .startsWith("data:image/", "Photo must be an image")
+    .max(MAX_ATTACHMENT_CHARS, "Photo is too large (max 2 MB)")
     .optional()
     .or(z.literal("")),
 });
 
-export const applicationInputSchema = applicationFields.refine(
+// Supporting documents — both optional. PDF or image, sent as data URLs.
+// They live outside `applicationFields` because only the public form uploads
+// them; the admin edit screen never sends them back.
+const submissionFields = applicationFields.extend({
+  pmdcCertificate: documentField("PMDC Certificate"),
+  finalYearResult: documentField("Final year result card"),
+});
+
+export const applicationInputSchema = submissionFields.refine(
   marksRefine,
   marksRefineMsg
 );
@@ -176,6 +204,8 @@ export interface Application
   extends Omit<
     ApplicationInput,
     | "photo"
+    | "pmdcCertificate"
+    | "finalYearResult"
     | "universityStatus"
     | "universityName"
     | "preference2"
@@ -197,6 +227,8 @@ export interface Application
   seq: number;
   createdAt: string;
   photoUrl: string | null;
+  pmdcCertificateUrl: string | null;
+  finalYearResultUrl: string | null;
   assignedRotation: string | null;
   downloadToken: string;
 }
@@ -232,4 +264,6 @@ export const LABELS: Record<string, string> = {
   preference3: "Preference 3",
   preference4: "Preference 4",
   assignedRotation: "Assigned Rotation",
+  pmdcCertificateUrl: "PMDC Certificate",
+  finalYearResultUrl: "Final Year Result Card",
 };

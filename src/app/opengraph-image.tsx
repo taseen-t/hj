@@ -21,6 +21,15 @@ export default function Image() {
           fontFamily: "sans-serif",
         }}
       >
+        <div style={{ display: "flex", marginBottom: 34 }}>
+          <svg width="86" height="86" viewBox="0 0 32 32" fill="#ffffff">
+            <circle cx="16" cy="16" r="5" />
+            <circle cx="16" cy="4.6" r="3.5" />
+            <circle cx="16" cy="27.4" r="3.5" />
+            <circle cx="4.6" cy="16" r="3.5" />
+            <circle cx="27.4" cy="16" r="3.5" />
+          </svg>
+        </div>
         <div style={{ fontSize: 30, letterSpacing: 8, opacity: 0.85 }}>
           ANNUAL SESSION 2026 - 2027
         </div>

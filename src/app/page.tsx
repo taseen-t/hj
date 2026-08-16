@@ -1,10 +1,12 @@
 import Link from "next/link";
 import ApplicationForm from "@/components/ApplicationForm";
+import Logo from "@/components/Logo";
 
 export default function Home() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
       <header className="mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-800 to-brand-950 px-6 py-9 text-center text-white shadow-lift sm:px-10">
+        <Logo className="mx-auto mb-4 h-9 w-9 text-white/90" />
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-200">
           Annual Session 2026 - 2027
         </p>

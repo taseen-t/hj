@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Logo from "./Logo";
 
 export default function Navbar() {
   return (
@@ -6,9 +7,7 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
         <Link href="/" className="flex items-center gap-2.5">
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-950 text-white">
-            <svg viewBox="0 0 32 32" className="h-5 w-5" fill="currentColor" aria-hidden="true">
-              <path d="M13 6 h6 v7 h7 v6 h-7 v7 h-6 v-7 h-7 v-6 h7 z" />
-            </svg>
+            <Logo className="h-[18px] w-[18px]" />
           </span>
           <span className="text-sm font-bold text-brand-950 sm:text-base">House Job Portal</span>
         </Link>

@@ -4,7 +4,17 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { clsx } from "clsx";
-import { CheckCircle2, Check, Copy, Download, Loader2, Upload, AlertCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Check,
+  Copy,
+  Download,
+  FileCheck2,
+  Loader2,
+  Paperclip,
+  Upload,
+  AlertCircle,
+} from "lucide-react";
 import {
   applicationInputSchema,
   computePercentage,
@@ -18,6 +28,10 @@ import { downloadApplicationPdf } from "@/lib/pdf";
 import { Field, SectionTitle } from "./fields";
 
 const MAX_PHOTO = 2 * 1024 * 1024;
+
+// A picked supporting document — the data URL we submit plus the original
+// filename, which is all we can show for a PDF (no inline preview).
+type DocFile = { dataUrl: string; name: string };
 
 type Submitted = {
   values: ApplicationInput & { photo?: string };
@@ -44,6 +58,10 @@ export default function ApplicationForm() {
 
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [pmdc, setPmdc] = useState<DocFile | null>(null);
+  const [pmdcError, setPmdcError] = useState<string | null>(null);
+  const [finalYear, setFinalYear] = useState<DocFile | null>(null);
+  const [finalYearError, setFinalYearError] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState<Submitted | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -61,9 +79,33 @@ export default function ApplicationForm() {
     reader.readAsDataURL(file);
   }
 
+  // Shared picker for the supporting documents (image or PDF, max 2 MB).
+  function onDocument(
+    e: React.ChangeEvent<HTMLInputElement>,
+    setFile: (f: DocFile | null) => void,
+    setError: (m: string | null) => void
+  ) {
+    const file = e.target.files?.[0];
+    setError(null);
+    if (!file) return setFile(null);
+    const isAllowed =
+      file.type.startsWith("image/") || file.type === "application/pdf";
+    if (!isAllowed) return setError("Please choose an image or a PDF file.");
+    if (file.size > MAX_PHOTO) return setError("File must be under 2 MB.");
+    const reader = new FileReader();
+    reader.onload = () =>
+      setFile({ dataUrl: reader.result as string, name: file.name });
+    reader.readAsDataURL(file);
+  }
+
   async function onSubmit(values: ApplicationInput) {
     setServerError(null);
-    const payload = { ...values, photo: photo ?? undefined };
+    const payload = {
+      ...values,
+      photo: photo ?? undefined,
+      pmdcCertificate: pmdc?.dataUrl ?? undefined,
+      finalYearResult: finalYear?.dataUrl ?? undefined,
+    };
     try {
       const res = await fetch("/api/submit", {
         method: "POST",
@@ -103,6 +145,8 @@ export default function ApplicationForm() {
   function startOver() {
     reset();
     setPhoto(null);
+    setPmdc(null);
+    setFinalYear(null);
     setSubmitted(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -370,6 +414,22 @@ export default function ApplicationForm() {
           <input id="photo" type="file" accept="image/*" className="hidden" onChange={onPhoto} />
           {photoError && <p className="field-error">{photoError}</p>}
         </div>
+
+        <SectionTitle>Supporting Documents</SectionTitle>
+        <DocumentUpload
+          id="pmdcCertificate"
+          title="Attach PMDC Certificate"
+          file={pmdc}
+          error={pmdcError}
+          onChange={(e) => onDocument(e, setPmdc, setPmdcError)}
+        />
+        <DocumentUpload
+          id="finalYearResult"
+          title="Attach Final Year result card"
+          file={finalYear}
+          error={finalYearError}
+          onChange={(e) => onDocument(e, setFinalYear, setFinalYearError)}
+        />
       </div>
 
       <div className="mt-8 space-y-4">
@@ -396,6 +456,51 @@ function Row({ k, v }: { k: string; v: string }) {
     <div className="flex justify-between gap-4 border-b border-dashed border-slate-200 py-1.5">
       <dt className="text-slate-500">{k}</dt>
       <dd className="font-medium text-slate-900">{v}</dd>
+    </div>
+  );
+}
+
+function DocumentUpload({
+  id,
+  title,
+  file,
+  error,
+  onChange,
+}: {
+  id: string;
+  title: string;
+  file: DocFile | null;
+  error: string | null;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={id}
+        className="flex h-full cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-4 transition hover:border-brand-300 hover:bg-brand-50"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-white ring-1 ring-slate-200">
+          {file ? (
+            <FileCheck2 className="h-5 w-5 text-emerald-600" />
+          ) : (
+            <Paperclip className="h-5 w-5 text-brand-400" />
+          )}
+        </span>
+        <div className="min-w-0 text-sm">
+          <p className="font-semibold text-brand-700">{title}</p>
+          <p className="truncate text-slate-500">
+            {file ? file.name : "Optional — image or PDF, up to 2 MB"}
+          </p>
+        </div>
+      </label>
+      <input
+        id={id}
+        type="file"
+        accept="image/*,application/pdf"
+        className="hidden"
+        onChange={onChange}
+      />
+      {error && <p className="field-error">{error}</p>}
     </div>
   );
 }

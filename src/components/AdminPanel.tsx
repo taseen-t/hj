@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
   Download,
+  ExternalLink,
+  FileCheck2,
   FileSpreadsheet,
+  Paperclip,
   Loader2,
   LogOut,
   Lock,
@@ -278,6 +281,32 @@ export default function AdminPanel() {
 }
 
 /* ------------------------------ Detail drawer ----------------------------- */
+
+// One supporting document row: opens in a new tab when present, otherwise
+// renders a muted "Not attached" placeholder.
+function DocumentLink({ label, url }: { label: string; url: string | null }) {
+  if (!url) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-400 ring-1 ring-slate-200">
+        <Paperclip className="h-4 w-4 shrink-0" />
+        <span>{label}</span>
+        <span className="ml-auto text-xs">Not attached</span>
+      </div>
+    );
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-sm font-medium text-brand-700 ring-1 ring-brand-100 transition hover:bg-brand-100"
+    >
+      <FileCheck2 className="h-4 w-4 shrink-0" />
+      <span>{label}</span>
+      <ExternalLink className="ml-auto h-3.5 w-3.5" />
+    </a>
+  );
+}
 
 type EditForm = {
   name: string;
@@ -573,6 +602,19 @@ function DetailDrawer({
               className="h-32 w-28 rounded-lg object-cover ring-1 ring-slate-200"
             />
           )}
+
+          <div>
+            <div className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">
+              Supporting documents
+            </div>
+            <div className="space-y-2">
+              <DocumentLink label="PMDC Certificate" url={app.pmdcCertificateUrl} />
+              <DocumentLink
+                label="Final Year Result Card"
+                url={app.finalYearResultUrl}
+              />
+            </div>
+          </div>
 
           {error && (
             <div className="flex items-start gap-2 rounded-lg bg-rose-50 p-3 text-sm text-rose-700 ring-1 ring-rose-200">

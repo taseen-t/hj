@@ -29,6 +29,9 @@ create table if not exists public.applications (
   preference_4         text,
   assigned_rotation    text,
   photo_url            text,
+  -- Supporting documents (both optional). Image or PDF, stored in the same bucket.
+  pmdc_certificate_url  text,
+  final_year_result_url text,
   download_token       text
 );
 

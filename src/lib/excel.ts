@@ -41,6 +41,12 @@ const COLUMN_DEFS: ReadonlyArray<{
   { header: "Preference 4", width: 20, value: (a) => a.preference4 },
   { header: "Assigned Rotation", width: 20, value: (a) => a.assignedRotation ?? "" },
   { header: "Photo", width: 30, value: (a) => photoCell(a.photoUrl) },
+  { header: "PMDC Certificate", width: 30, value: (a) => photoCell(a.pmdcCertificateUrl) },
+  {
+    header: "Final Year Result Card",
+    width: 30,
+    value: (a) => photoCell(a.finalYearResultUrl),
+  },
 ];
 
 export async function buildWorkbook(apps: Application[]): Promise<Buffer> {
