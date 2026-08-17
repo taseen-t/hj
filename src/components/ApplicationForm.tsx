@@ -306,7 +306,14 @@ export default function ApplicationForm() {
 
   /* -------------------------------- Wizard -------------------------------- */
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="card overflow-hidden">
+    // Submission is driven solely by the Submit button's onClick. Swallowing
+    // the form's own submit event means a stray Enter key or default action
+    // can never post the application early.
+    <form
+      onSubmit={(e) => e.preventDefault()}
+      noValidate
+      className="card overflow-hidden"
+    >
       <div className="grid lg:grid-cols-[248px_1fr]">
         {/* Desktop stepper sidebar */}
         <aside className="hidden border-r border-slate-200 bg-slate-50/60 p-6 lg:block">
@@ -665,13 +672,27 @@ export default function ApplicationForm() {
                 <p className="text-xs text-slate-400">Fields marked * are required.</p>
               )}
 
+              {/* Distinct keys stop React reusing one <button> node across these
+                  branches — reusing it let a Continue click land on a freshly
+                  retyped submit button and fire the form's default action. */}
               {isLast ? (
-                <button type="submit" className="btn btn-primary px-8" disabled={isSubmitting}>
+                <button
+                  key="submit"
+                  type="button"
+                  onClick={() => handleSubmit(onSubmit)()}
+                  className="btn btn-primary px-8"
+                  disabled={isSubmitting}
+                >
                   {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   {isSubmitting ? "Submitting..." : "Submit application"}
                 </button>
               ) : (
-                <button type="button" onClick={goNext} className="btn btn-primary px-8">
+                <button
+                  key="next"
+                  type="button"
+                  onClick={goNext}
+                  className="btn btn-primary px-8"
+                >
                   Continue
                   <ArrowRight className="h-4 w-4" />
                 </button>
