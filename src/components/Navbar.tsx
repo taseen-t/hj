@@ -51,55 +51,43 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Drawer and backdrop live outside <nav>: the nav's backdrop-blur would
-          otherwise become the containing block for these fixed elements. Both
-          stay mounted so opening and closing are equally animated. */}
+      {/* Panel and its click-catcher live outside <nav>: the nav's
+          backdrop-blur would otherwise become the containing block for these
+          fixed elements. Both stay mounted so closing animates too. */}
       <div
         onClick={() => setOpen(false)}
         aria-hidden="true"
         className={clsx(
-          "fixed inset-0 z-40 bg-slate-900/40 transition-opacity duration-300 ease-in-out sm:hidden",
+          "fixed inset-0 z-40 bg-slate-900/10 transition-opacity duration-300 ease-in-out sm:hidden",
           open ? "opacity-100" : "pointer-events-none opacity-0"
         )}
       />
-      <aside
+      <div
         id="mobile-menu"
         aria-hidden={!open}
-        // Inline transform rather than the translate-x-* utilities: Tailwind
-        // emits the `transform` declaration with .translate-x-full but not
-        // with .translate-x-0, so the pair is asymmetric and the open state
-        // ends up with no transform at all. An explicit value on both sides
-        // keeps the slide interpolatable in each direction.
-        style={{ transform: open ? "translateX(0)" : "translateX(100%)" }}
+        // Inline transform rather than the translate/scale utilities: Tailwind
+        // emits the `transform` declaration for some of that family but not
+        // all, so an explicit value on both sides keeps it interpolatable.
+        style={{
+          opacity: open ? 1 : 0,
+          transform: open
+            ? "translateY(0) scale(1)"
+            : "translateY(-10px) scale(0.96)",
+        }}
         className={clsx(
-          "fixed right-0 top-0 z-50 flex h-full w-1/2 min-w-[190px] flex-col border-l border-slate-200 bg-white shadow-xl transition-transform duration-300 ease-in-out sm:hidden",
+          "fixed right-3 top-[4.75rem] z-50 w-52 origin-top-right rounded-2xl border border-white/60 bg-white/70 p-2 shadow-2xl shadow-slate-900/10 backdrop-blur-xl transition-all duration-300 ease-in-out sm:hidden",
           !open && "pointer-events-none"
         )}
       >
-        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-          <span className="text-sm font-semibold text-slate-900">Menu</span>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            aria-label="Close menu"
-            tabIndex={open ? 0 : -1}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="p-4">
-          <Link
-            href="/admin"
-            onClick={() => setOpen(false)}
-            tabIndex={open ? 0 : -1}
-            className="block rounded-lg bg-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-brand-700"
-          >
-            Admin Login
-          </Link>
-        </div>
-      </aside>
+        <Link
+          href="/admin"
+          onClick={() => setOpen(false)}
+          tabIndex={open ? 0 : -1}
+          className="block rounded-xl bg-brand-600 px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-brand-700"
+        >
+          Admin Login
+        </Link>
+      </div>
     </>
   );
 }
