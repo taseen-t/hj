@@ -25,14 +25,15 @@ export async function POST(req: Request) {
     // Reject duplicate CNIC submissions (normalize for comparison).
     const existing = await store.findByCnic(parsed.data.cnic);
     if (existing) {
-      const existingRef = referenceIdFor(existing);
+      // Deliberately does not echo the existing reference ID: this endpoint is
+      // public, so returning it would let anyone probe a CNIC and learn both
+      // that the person applied and their reference number.
       return NextResponse.json(
         {
           error:
             "An application with this CNIC has already been submitted. " +
-            `Existing Reference ID: ${existingRef}.`,
+            "If this was not you, please contact the office.",
           duplicate: true,
-          referenceId: existingRef,
         },
         { status: 409 }
       );

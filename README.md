@@ -18,17 +18,20 @@ It provides:
 
 ```bash
 npm install
-cp .env.local.example .env.local   # optional; works without it
+cp .env.local.example .env.local
+# then set ADMIN_PASSCODE in .env.local — the admin panel needs it
 npm run dev
 ```
 
 - Form:  http://localhost:3000
-- Admin: http://localhost:3000/admin  (default passcode: **admin123**)
+- Admin: http://localhost:3000/admin
 
 In this mode every submission is saved to `./.data/applications.json` and the
 photo is stored inline. Great for trying it locally.
 
-> Change the admin passcode by setting `ADMIN_PASSCODE` in `.env.local`.
+> **`ADMIN_PASSCODE` is required and has no default.** If it is unset, the admin
+> panel rejects every login and logs a warning, rather than falling back to a
+> guessable password. The public application form keeps working either way.
 
 ---
 

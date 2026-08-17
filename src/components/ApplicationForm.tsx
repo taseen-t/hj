@@ -22,6 +22,8 @@ import {
   computePercentage,
   GENDERS,
   MARITAL_STATUSES,
+  MAX_ATTACHMENT_BYTES,
+  MAX_ATTACHMENT_LABEL,
   ROTATIONS,
   UNIVERSITY_STATUSES,
   type ApplicationInput,
@@ -30,7 +32,11 @@ import { downloadApplicationPdf } from "@/lib/pdf";
 import { RadioGroup, Row, TileGroup } from "./fields";
 import Stepper, { type Step } from "./Stepper";
 
-const MAX_PHOTO = 2 * 1024 * 1024;
+// Mirrors the server rules in lib/types.ts so the applicant is told what's
+// wrong before a doomed upload, not after.
+const ACCEPTED_IMAGE = /^image\/(png|jpeg|jpg|webp|gif|heic|heif)$/;
+const ACCEPT_ATTR_IMAGE = ".png,.jpg,.jpeg,.webp,.gif,.heic,.heif";
+const ACCEPT_ATTR_DOC = `${ACCEPT_ATTR_IMAGE},.pdf`;
 
 // A picked supporting document — the data URL we submit plus the original
 // filename, which is all we can show for a PDF (no inline preview).
@@ -135,14 +141,18 @@ export default function ApplicationForm() {
     const file = e.target.files?.[0];
     setPhotoError(null);
     if (!file) return setPhoto(null);
-    if (!file.type.startsWith("image/")) return setPhotoError("Please choose an image file.");
-    if (file.size > MAX_PHOTO) return setPhotoError("Image must be under 2 MB.");
+    if (!ACCEPTED_IMAGE.test(file.type)) {
+      return setPhotoError("Please choose a PNG, JPG or WEBP photo.");
+    }
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      return setPhotoError(`Photo must be under ${MAX_ATTACHMENT_LABEL}.`);
+    }
     const reader = new FileReader();
     reader.onload = () => setPhoto(reader.result as string);
     reader.readAsDataURL(file);
   }
 
-  // Shared picker for the supporting documents (image or PDF, max 2 MB).
+  // Shared picker for the supporting documents (photo or PDF).
   function onDocument(
     e: React.ChangeEvent<HTMLInputElement>,
     setFile: (f: DocFile | null) => void,
@@ -151,9 +161,12 @@ export default function ApplicationForm() {
     const file = e.target.files?.[0];
     setError(null);
     if (!file) return setFile(null);
-    const isAllowed = file.type.startsWith("image/") || file.type === "application/pdf";
-    if (!isAllowed) return setError("Please choose an image or a PDF file.");
-    if (file.size > MAX_PHOTO) return setError("File must be under 2 MB.");
+    const isAllowed =
+      ACCEPTED_IMAGE.test(file.type) || file.type === "application/pdf";
+    if (!isAllowed) return setError("Please choose a photo (PNG/JPG) or a PDF.");
+    if (file.size > MAX_ATTACHMENT_BYTES) {
+      return setError(`File must be under ${MAX_ATTACHMENT_LABEL}.`);
+    }
     const reader = new FileReader();
     reader.onload = () => setFile({ dataUrl: reader.result as string, name: file.name });
     reader.readAsDataURL(file);
@@ -588,7 +601,7 @@ export default function ApplicationForm() {
 
             {step === 4 && (
               <>
-                <Row label="Passport-size photo" hint="PNG or JPG, up to 2 MB">
+                <Row label="Passport-size photo" hint={`PNG or JPG, up to ${MAX_ATTACHMENT_LABEL}`}>
                   <label
                     htmlFor="photo"
                     className="flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/40 p-4 transition hover:border-brand-300 hover:bg-brand-50"
@@ -609,13 +622,13 @@ export default function ApplicationForm() {
                       <p className="font-semibold text-brand-700">
                         {photo ? "Change photo" : "Upload photo"}
                       </p>
-                      <p className="text-slate-500">PNG or JPG, up to 2 MB</p>
+                      <p className="text-slate-500">PNG or JPG, up to {MAX_ATTACHMENT_LABEL}</p>
                     </div>
                   </label>
                   <input
                     id="photo"
                     type="file"
-                    accept="image/*"
+                    accept={ACCEPT_ATTR_IMAGE}
                     className="hidden"
                     onChange={onPhoto}
                   />
@@ -841,14 +854,14 @@ function DocumentUpload({
         <div className="min-w-0 text-sm">
           <p className="font-semibold text-brand-700">{title}</p>
           <p className="truncate text-slate-500">
-            {file ? file.name : "Optional — image or PDF, up to 2 MB"}
+            {file ? file.name : `Optional — photo or PDF, up to ${MAX_ATTACHMENT_LABEL}`}
           </p>
         </div>
       </label>
       <input
         id={id}
         type="file"
-        accept="image/*,application/pdf"
+        accept={ACCEPT_ATTR_DOC}
         className="hidden"
         onChange={onChange}
       />

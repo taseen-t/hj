@@ -118,18 +118,27 @@ const marksRefineMsg = {
 
 // Attachments travel as data URLs inside the submission JSON. Base64 inflates
 // the payload by ~4/3, so the guard here is on the encoded string length.
-export const MAX_ATTACHMENT_BYTES = 2 * 1024 * 1024;
+//
+// 1 MB each is a deliberate ceiling: three attachments at this size encode to
+// roughly 4.1 MB, which stays under the ~4.5 MB request-body limit serverless
+// hosts apply. Raising it makes submissions with two large scans fail outright.
+export const MAX_ATTACHMENT_BYTES = 1024 * 1024;
+export const MAX_ATTACHMENT_LABEL = "1 MB";
 const MAX_ATTACHMENT_CHARS = Math.ceil(MAX_ATTACHMENT_BYTES * 1.4);
+
+// SVG is excluded on purpose: it is an image to a browser but a script host in
+// practice, and the admin opens these documents directly in a new tab.
+const RASTER = "png|jpeg|jpg|webp|gif|heic|heif";
 
 // A supporting document: a scan/photo or a PDF. Always optional.
 const documentField = (label: string) =>
   z
     .string()
     .regex(
-      /^data:(image\/[a-zA-Z0-9.+-]+|application\/pdf);base64,/,
-      `${label} must be an image or a PDF`
+      new RegExp(`^data:(image/(${RASTER})|application/pdf);base64,`),
+      `${label} must be a photo or a PDF`
     )
-    .max(MAX_ATTACHMENT_CHARS, `${label} is too large (max 2 MB)`)
+    .max(MAX_ATTACHMENT_CHARS, `${label} is too large (max ${MAX_ATTACHMENT_LABEL})`)
     .optional()
     .or(z.literal(""));
 
@@ -167,8 +176,10 @@ const applicationFields = z.object({
   // Photo arrives as a data URL string (data:image/...;base64,....).
   photo: z
     .string()
-    .startsWith("data:image/", "Photo must be an image")
-    .max(MAX_ATTACHMENT_CHARS, "Photo is too large (max 2 MB)")
+    // Requires base64 too — the previous prefix check let through data URLs
+    // that the decoder then rejected, silently dropping the photo.
+    .regex(new RegExp(`^data:image/(${RASTER});base64,`), "Photo must be a photo file")
+    .max(MAX_ATTACHMENT_CHARS, `Photo is too large (max ${MAX_ATTACHMENT_LABEL})`)
     .optional()
     .or(z.literal("")),
 });
